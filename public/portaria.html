@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portaria - Controle de Acesso</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="./css/global.css" rel="stylesheet">
+    <link href="./css/home.css" rel="stylesheet">
+    <link href="./css/portaria.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="particles-js"></div>
+
+    <nav class="navbar">
+        <div class="menu-toggle" id="menuToggle">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+        <div class="logo">
+            <a href="#">SENAI</a>
+        </div>
+        <button id="themeToggle"
+            style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 20px;">
+            <i class="fas fa-moon"></i>
+        </button>
+    </nav>
+
+    <aside class="sidebar" id="sidebar">
+        <ul class="nav-links">
+            <li>
+                <a href="#" onclick="mostrarTela('tela-inicio')"><i class="fas fa-id-card"></i> Início</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-saidas')"><i class="fas fa-door-open"></i> Saídas</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-retorno')"><i class="fas fa-undo"></i> Registrar Retorno</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-historico')"><i class="fas fa-clipboard-list"></i> Histórico</a>
+            </li>
+            <li>
+                <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            </li>
+        </ul>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+
+        <section id="tela-inicio">
+            <h1>Painel da Portaria</h1>
+            <div class="card">
+                <h2 style="color: var(--senai-red); margin-bottom: 15px; font-size: 18px;">Controle de Liberação de Alunos</h2>
+                <p style="margin-bottom: 15px; line-height: 1.5;">
+                    Este módulo é destinado aos agentes de portaria para a conferência física e liberação dos alunos que
+                    já possuem autorização da secretaria.
+                </p>
+                <div class="status-container">
+                    <div class="status-box">
+                        <i class="fas fa-clock"></i>
+                        <span>Aguardando Saída: <strong id="qtd-aguardando">0</strong></span>
+                    </div>
+                    <div class="status-box">
+                        <i class="fas fa-walking"></i>
+                        <span>Fora da Escola: <strong id="qtd-fora">0</strong></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tela-saidas" style="display: none;">
+            <h1>Saídas Autorizadas</h1>
+            <div class="card">
+                <p>Confirme a identidade do aluno e do responsável antes de clicar em liberar.</p>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Responsável p/ Busca</th>
+                                <th>Autorizado por</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-saidas">
+                            <tr>
+                                <td colspan="5">Carregando saídas autorizadas...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tela-retorno" style="display: none;">
+            <h1>Registrar Retorno do Aluno</h1>
+            <div class="card">
+                <p>Alunos que já saíram e ainda estão aguardando o registro de volta à escola.</p>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Responsável p/ Busca</th>
+                                <th>Horário de Saída</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-retorno">
+                            <tr>
+                                <td colspan="5">Carregando alunos fora da escola...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tela-historico" style="display: none;">
+            <h1>Histórico de Saídas Realizadas</h1>
+            <div class="card">
+                <div class="filter-area">
+                    <label for="filtroPortaria" style="font-weight: 600; color: var(--dark-blue);">Período:</label>
+                    <select id="filtroPortaria" class="filter-select">
+                        <option value="todos">Todos</option>
+                        <option value="semana">Esta Semana</option>
+                        <option value="mes">Este Mês</option>
+                        <option value="ano">Este Ano</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Horário de Saída</th>
+                                <th>Horário de Retorno</th>
+                                <th>Responsável</th>
+                                <th>Status</th>
+                                <th>Motivo (se cancelado)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaHistoricoPortariaBody">
+                            <tr>
+                                <td colspan="7">Carregando histórico...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="modalCancelar" class="modal-negativa" style="display: none;">
+        <div class="modal-content">
+            <h2><i class="fas fa-exclamation-circle" style="color: var(--senai-red);"></i> Cancelar Pedido</h2>
+            <p>Informe o motivo do cancelamento (o responsável será avisado por e-mail):</p>
+            <textarea id="motivoCancelamento" rows="4" placeholder="Ex: Responsável não compareceu, aluno não localizado..."></textarea>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="fecharModalCancelar()">Voltar</button>
+                <button class="btn-action btn-deny" onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="./js/general/portaria.js"></script>
+</body>
+
+</html>

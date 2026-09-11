@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <title>Login - Controle de Saídas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="./css/style.css">
+    
+</head>
+<body class="centralize">
+    <form id="loginForm">
+        <div class="form-field">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" placeholder="E-mail" oninput="onChangeEmail()" required />
+            <div class="error" id="email-required-error" style="display: none;">Email é obrigatório</div>
+            <div class="error" id="email-invalid-error" style="display: none;">Email é inválido</div>
+        </div>
+
+        <div class="form-field">
+            <label for="password">Senha</label>
+            <input type="password" id="password" placeholder="Senha" oninput="onChangePassword()" required />
+            <div class="error" id="password-required-error" style="display: none;">Senha é obrigatória</div>
+            <div class="error" id="password-min-length-error" style="display: none;">A senha deve ter no mínimo 6 caracteres</div>
+        </div>
+
+        <div>
+            <button type="submit" class="enter-btn" id="login-button" disabled>Entrar</button>
+        </div>
+        <div>
+            <button type="button" class="clear" id="recover-password-button" onclick="recoverPassword(event)">
+                Recuperar senha
+            </button>
+        </div>
+    </form>
+    <script src="./js/general/index.js" defer></script>
+</body>
+</html>

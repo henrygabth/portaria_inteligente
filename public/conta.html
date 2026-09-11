@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Conta - Controle de Saídas</title>
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <script src="./js/general/conta.js" defer></script>
+</head>
+<body class="centralize">
+    <form id="formConta">
+        <h2>Meus Dados</h2>
+
+        <div class="form-field">
+            <label for="nomeResponsavel">Nome Completo</label>
+            <input type="text" id="nomeResponsavel" required />
+        </div>
+
+        <div class="form-field">
+            <label for="cpfResponsavel">CPF</label>
+            <input type="text" id="cpfResponsavel" disabled />
+        </div>
+
+        <div class="form-field">
+            <label for="emailResponsavel">E-mail</label>
+            <input type="email" id="emailResponsavel" required />
+        </div>
+
+        <div class="form-field">
+            <label for="telefoneResponsavel">Telefone</label>
+            <input type="tel" id="telefoneResponsavel" required />
+        </div>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
+        <h3>Alterar Senha (Opcional)</h3>
+
+        <div class="form-field">
+            <label for="senhaAtual">Senha Atual</label>
+            <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" />
+        </div>
+
+        <div class="form-field">
+            <label for="novaSenha">Nova Senha</label>
+            <input type="password" id="novaSenha" placeholder="Digite a nova senha" />
+        </div>
+
+        <div>
+            <button type="submit" class="enter-btn">Salvar Alterações</button>
+        </div>
+        <div>
+            <button type="button" class="clear" onclick="history.back()">Voltar</button>
+        </div>
+    </form>
+</body>
+</html>
