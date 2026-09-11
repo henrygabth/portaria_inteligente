@@ -38,7 +38,7 @@ function iniciarParticulas(theme) {
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#E52207" },
+            "color": { "value": "#0052cc" },
                 "shape": { "type": "circle" },
                 "opacity": { "value": 0.5 },
                 "size": { "value": 3, "random": true },

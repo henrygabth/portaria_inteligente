@@ -32,34 +32,6 @@
     background-color: #218838;
 }
 
-/* Botão de Cancelamento na Tabela (espelha o .btn-liberar para ficar alinhado) */
-.btn-cancelar {
-    background-color: var(--senai-red, #E52207);
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.3s ease;
-    font-size: 14px;
-}
-
-.btn-cancelar:hover {
-    background-color: #b81b06;
-}
-
-/* Container das ações (Liberar/Cancelar) lado a lado, alinhadas e formatadas */
-.acoes-portaria {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
 /* Área de Filtros do Histórico */
 .filter-area {
     margin-bottom: 20px;
@@ -80,7 +52,7 @@
 }
 
 .filter-select:focus {
-    border-color: #0052cc; /* Cor SENAI Blue */
+    border-color: #0052cc; /* Azul da marca Portaria Inteligente */
 }
 
 /* Caixa de Status na Tela de Início */

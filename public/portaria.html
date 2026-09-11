@@ -22,7 +22,7 @@
             <span class="bar"></span>
         </div>
         <div class="logo">
-            <a href="#">SENAI</a>
+            <a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a>
         </div>
         <button id="themeToggle"
             style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 20px;">
@@ -55,7 +55,8 @@
         <section id="tela-inicio">
             <h1>Painel da Portaria</h1>
             <div class="card">
-                <h2 style="color: var(--senai-red); margin-bottom: 15px; font-size: 18px;">Controle de Liberação de Alunos</h2>
+                <h2 style="color: var(--senai-red); margin-bottom: 15px; font-size: 18px;">Controle de Liberação de
+                    Alunos</h2>
                 <p style="margin-bottom: 15px; line-height: 1.5;">
                     Este módulo é destinado aos agentes de portaria para a conferência física e liberação dos alunos que
                     já possuem autorização da secretaria.
@@ -164,7 +165,8 @@
         <div class="modal-content">
             <h2><i class="fas fa-exclamation-circle" style="color: var(--senai-red);"></i> Cancelar Pedido</h2>
             <p>Informe o motivo do cancelamento (o responsável será avisado por e-mail):</p>
-            <textarea id="motivoCancelamento" rows="4" placeholder="Ex: Responsável não compareceu, aluno não localizado..."></textarea>
+            <textarea id="motivoCancelamento" rows="4"
+                placeholder="Ex: Responsável não compareceu, aluno não localizado..."></textarea>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="fecharModalCancelar()">Voltar</button>
                 <button class="btn-action btn-deny" onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
