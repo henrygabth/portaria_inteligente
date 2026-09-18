@@ -25,14 +25,20 @@ const alunosRotas = require('./api/alunosRotas');
 const turmasRotas = require('./api/turmasRotas');
 const pedidosRotas = require('./api/pedidosRotas');
 const responsaveisRotas = require('./api/responsaveisRotas');
+<<<<<<< HEAD
 const pedidosRecorrentesRotas = require('./api/pedidosRecorrentesRotas');
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
 app.use('/api/usuarios', usuariosRotas);
 app.use('/api/alunos', alunosRotas);
 app.use('/api/turmas', turmasRotas);
 app.use('/api/pedidos', pedidosRotas);
 app.use('/api/responsaveis', responsaveisRotas);
+<<<<<<< HEAD
 app.use('/api/pedidos-recorrentes', pedidosRecorrentesRotas);
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
 // Rota raiz "/" - Abre a home.html no navegador
 app.get('/', (req, res) => {
@@ -42,9 +48,12 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORTA || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
+<<<<<<< HEAD
 
     // Gera os pedidos do dia a partir dos moldes recorrentes e passa a checar
     // atrasos no retorno periodicamente (ver utils/agendador.js).
     const { iniciarAgendador } = require('./utils/agendador');
     iniciarAgendador();
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 });

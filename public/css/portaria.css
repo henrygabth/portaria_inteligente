@@ -32,6 +32,7 @@
     background-color: #218838;
 }
 
+<<<<<<< HEAD
 /* Botão de Cancelamento na Tabela (espelha o .btn-liberar para ficar alinhado) */
 .btn-cancelar {
     background-color: var(--senai-red, #E52207);
@@ -60,6 +61,8 @@
     gap: 8px;
 }
 
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 /* Área de Filtros do Histórico */
 .filter-area {
     margin-bottom: 20px;
@@ -80,7 +83,11 @@
 }
 
 .filter-select:focus {
+<<<<<<< HEAD
     border-color: #0052cc; /* Cor SENAI Blue */
+=======
+    border-color: #0052cc; /* Azul da marca Portaria Inteligente */
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 }
 
 /* Caixa de Status na Tela de Início */

@@ -115,6 +115,7 @@ async function login(event) {
                 localStorage.setItem('usuario', JSON.stringify(data.usuario));
             }
 
+<<<<<<< HEAD
             const tipoUsuario = (data.usuario?.tipo_usuario || '').toUpperCase();
 
             // O ADMIN tem acesso aos três painéis, então em vez de já cair
@@ -125,6 +126,12 @@ async function login(event) {
                     tipoUsuario === 'SECRETARIA' ? 'secretaria.html' :
                     tipoUsuario === 'PORTEIRO' || tipoUsuario === 'PORTARIA' ? 'portaria.html' : 'home.html'
                 ));
+=======
+            const destino = data.redirecionarPara || (
+                data.usuario?.tipo_usuario === 'SECRETARIA' ? 'secretaria.html' :
+                data.usuario?.tipo_usuario === 'PORTEIRO' || data.usuario?.tipo_usuario === 'PORTARIA' ? 'portaria.html' : 'home.html'
+            );
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
             window.location.href = destino;
         } else {
@@ -232,7 +239,11 @@ function logout() {
 }
 
 function checkAuth() {
+<<<<<<< HEAD
     const paginasProtegidas = ['home.html', 'secretaria.html', 'portaria.html', 'selecionar-painel.html'];
+=======
+    const paginasProtegidas = ['home.html', 'secretaria.html', 'portaria.html'];
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     const paginaAtual = window.location.pathname.split('/').pop();
 
     if (paginasProtegidas.includes(paginaAtual) && !localStorage.getItem('token')) {

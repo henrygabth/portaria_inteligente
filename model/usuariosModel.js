@@ -7,12 +7,16 @@ const usuariosModel = {
     },
 
     buscarPorNome: async (nome) => {
+<<<<<<< HEAD
         // Nunca devolve a coluna `senha` (nem cpf) — este endpoint é usado só
         // pra localizar um usuário por nome, não é um "perfil completo".
         const [rows] = await db.query(
             'SELECT id_usuario, nome, email, telefone, tipo_usuario, status FROM usuarios WHERE nome LIKE ?',
             [`%${nome}%`]
         );
+=======
+        const [rows] = await db.query('SELECT * FROM usuarios WHERE nome LIKE ?', [`%${nome}%`]);
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
         return rows[0] || null;
     },
 
@@ -68,6 +72,7 @@ const usuariosModel = {
             );
         }
     }
+<<<<<<< HEAD
 
     // Usado pelo alerta de atraso: lista os e-mails de quem deve ser avisado
     // (Secretaria e Portaria) quando um aluno não retorna no horário previsto.
@@ -78,6 +83,8 @@ const usuariosModel = {
         const [rows] = await db.query(sql, papeis);
         return rows;
     }
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 };
 
 module.exports = usuariosModel;

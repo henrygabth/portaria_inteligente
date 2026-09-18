@@ -4,6 +4,7 @@ const historico = require('./historicoModel');
 
 // Cadastrar novo pedido (Pai cria -> PENDENTE)
 // Também grava o primeiro registro no histórico (status_anterior = null)
+<<<<<<< HEAD
 // hora_prevista_retorno e recorrente_id são opcionais: o primeiro alimenta o
 // alerta de atraso, o segundo só é preenchido quando o pedido foi gerado
 // automaticamente a partir de um molde recorrente.
@@ -12,11 +13,22 @@ async function cadastrar(aluno_id, nome_aluno, turma_id, solicitante_id, hora_pr
         `INSERT INTO pedidos_saida (aluno_id, recorrente_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, hora_prevista_retorno, motivo, observacoes, status, data_criacao)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDENTE', NOW())`,
         [aluno_id, recorrente_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, hora_prevista_retorno, motivo, observacoes]
+=======
+async function cadastrar(aluno_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, motivo, observacoes) {
+    const [result] = await db.query(
+        `INSERT INTO pedidos_saida (aluno_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, motivo, observacoes, status, data_criacao)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDENTE', NOW())`,
+        [aluno_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, motivo, observacoes]
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     );
 
     const pedido_id = result.insertId;
 
+<<<<<<< HEAD
     await historico.registrar(pedido_id, solicitante_id, null, 'PENDENTE', recorrente_id ? 'Solicitação gerada automaticamente (pedido recorrente)' : 'Solicitação criada pelo responsável');
+=======
+    await historico.registrar(pedido_id, solicitante_id, null, 'PENDENTE', 'Solicitação criada pelo responsável');
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
     return pedido_id;
 }
@@ -65,14 +77,21 @@ async function atualizarStatus(pedido_id, statusNovo, usuario_id, observacao = n
 // Base do SELECT usada nas buscas de pedidos, já com os JOINs necessários
 const SELECT_BASE = `
     SELECT p.pedidos_saida_id, p.nome_aluno, p.data_criacao, p.hora_prevista_saida,
+<<<<<<< HEAD
            p.hora_prevista_retorno, p.recorrente_id,
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
            p.status, p.motivo, p.observacoes, p.observacao,
            p.hora_saida_real, p.hora_retorno_real,
            t.sala_turma AS turma, t.turno,
            sol.nome AS responsavel,
+<<<<<<< HEAD
            usu.nome AS aprovador,
            (p.status = 'EM_SAIDA' AND p.hora_prevista_retorno IS NOT NULL
                 AND NOW() > DATE_ADD(p.hora_prevista_retorno, INTERVAL 5 MINUTE)) AS atrasado
+=======
+           usu.nome AS aprovador
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     FROM pedidos_saida p
     LEFT JOIN turmas t ON p.turma_id = t.id_turma
     LEFT JOIN usuarios sol ON p.solicitante_id = sol.id_usuario
@@ -130,6 +149,7 @@ async function obterStatus(pedido_id) {
     return rows.length > 0 ? rows[0].status : null;
 }
 
+<<<<<<< HEAD
 // ==========================================
 // ALERTA DE ATRASO NO RETORNO
 // ==========================================
@@ -239,3 +259,9 @@ module.exports = {
     marcarAlertaEnviado, obterEstatisticas
 };
 
+=======
+module.exports = {
+    cadastrar, atualizarStatus, buscarPorStatus, buscarPorSolicitante, buscarHistorico,
+    buscarParaNotificacao, obterStatus
+};
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7

@@ -13,12 +13,21 @@ const bcrypt = require('bcrypt');
 const db = require('./config/banco');
 
 // ---------- DADOS DO USUÁRIO (edite aqui) ----------
+<<<<<<< HEAD
 const nome = 'Portaria Inteligente';
 const cpf = '760163817091';
 const email = 'portariainteligente950@gmail.com';
 const telefone = '1995786411';
 const senha = '@admin2026';       // senha normal (será criptografada abaixo)
 const tipo_usuario = 'ADMIN';     // PAI, SECRETARIA, PORTARIA ou ADMIN
+=======
+const nome = 'Ivone';
+const cpf = '12345678912';
+const email = 'ivone@email.com';
+const telefone = '1993453411';
+const senha = '@secretaria2026';       // senha normal (será criptografada abaixo)
+const tipo_usuario = 'SECRETARIA';     // PAI, SECRETARIA, PORTARIA ou ADMIN
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 // -----------------------------------------------------
 
 (async () => {

@@ -3,13 +3,18 @@
 body {
     height: 100vh;
     margin: 0;
+<<<<<<< HEAD
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+=======
+    background: linear-gradient(135deg, #0A192F 0%, #0052cc 100%);
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     font-family: 'Montserrat', sans-serif;
     position: relative;
 }
 
+<<<<<<< HEAD
 body::before {
     content: "";
     position: absolute;
@@ -21,6 +26,8 @@ body::before {
     z-index: -1;
 }
 
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 .centralize {
     display: flex;
     justify-content: center;

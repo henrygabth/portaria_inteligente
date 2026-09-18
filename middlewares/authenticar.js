@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+<<<<<<< HEAD
 
 // Sem valor padrão embutido: se JWT_SECRET não estiver no .env, o servidor
 // falha ao iniciar em vez de assinar/validar tokens com uma senha fixa que
@@ -8,6 +9,9 @@ const SEGREDO = process.env.JWT_SECRET;
 if (!SEGREDO) {
     throw new Error('Configuração incompleta: defina JWT_SECRET no .env antes de iniciar o servidor.');
 }
+=======
+const SEGREDO = process.env.JWT_SECRET || 'chave_secreta_escola';
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
 const auth = (req, res, next) => {
     const tokenHeader = req.headers['authorization'];

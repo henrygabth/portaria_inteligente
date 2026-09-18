@@ -6,7 +6,11 @@ let pedidoSelecionado = null;
 // 1. GERENCIAMENTO DE TELAS E FORMULÁRIOS
 // ==========================================
 function mostrarTela(idTela) {
+<<<<<<< HEAD
     const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-historico'];
+=======
+    const telas = ['tela-inicio', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-historico'];
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     telas.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -22,9 +26,13 @@ function mostrarTela(idTela) {
         if (menuToggle) menuToggle.classList.remove('active');
     }
 
+<<<<<<< HEAD
     if (idTela === 'tela-painel') {
         carregarPainelEstatisticas();
     } else if (idTela === 'tela-solicitacoes') {
+=======
+    if (idTela === 'tela-solicitacoes') {
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
         carregarPendentes();
     } else if (idTela === 'tela-vincular') {
         carregarTurmasVinculo();
@@ -116,7 +124,11 @@ function iniciarParticulas(theme) {
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
+<<<<<<< HEAD
                 "color": { "value": "#0052cc" },
+=======
+            "color": { "value": "#0052cc" },
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                 "shape": { "type": "circle" },
                 "opacity": { "value": 0.5 },
                 "size": { "value": 3, "random": true },
@@ -458,6 +470,7 @@ async function salvarAlteracaoAluno(aluno_id) {
 }
 
 // ==========================================
+<<<<<<< HEAD
 // 3b. PAINEL DE ESTATÍSTICAS (dashboard)
 // ==========================================
 let ultimoPainelCarregado = null;
@@ -694,6 +707,8 @@ document.getElementById('btnGerarRelatorio')?.addEventListener('click', async ()
 });
 
 // ==========================================
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 // 4. AUTENTICAÇÃO E INICIALIZAÇÃO
 // ==========================================
 function logout() {
@@ -708,12 +723,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+<<<<<<< HEAD
     const usuarioLogado = JSON.parse(localStorage.getItem('usuario') || '{}');
     if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
         const linkTrocarPainel = document.getElementById('linkTrocarPainel');
         if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
     }
 
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');

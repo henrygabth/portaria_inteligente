@@ -128,6 +128,7 @@ select {
     border-radius: 6px;
 }
 
+<<<<<<< HEAD
 /* --- MODAL DE MOTIVO (recusa/cancelamento de pedidos) --- */
 .modal-negativa {
     position: fixed;
@@ -194,3 +195,9 @@ select {
     color: #fff;
 }
 
+=======
+input[type="radio"], 
+input[type="checkbox"] {
+    width: auto;
+}
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7

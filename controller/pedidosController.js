@@ -28,7 +28,11 @@ const pedidosController = {
     // pedidos para os próprios filhos, e nome/turma vêm sempre corretos do banco.
     cadastrar: async (req, res) => {
         try {
+<<<<<<< HEAD
             const { aluno_id, hora_prevista_saida, hora_prevista_retorno, motivo, observacoes } = req.body;
+=======
+            const { aluno_id, hora_prevista_saida, motivo, observacoes } = req.body;
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
             const solicitante_id = req.body.solicitante_id || req.usuario.id_usuario;
 
             if (!aluno_id || !hora_prevista_saida) {
@@ -46,8 +50,12 @@ const pedidosController = {
             }
 
             const pedido_id = await pedidos.cadastrar(
+<<<<<<< HEAD
                 aluno_id, aluno.nome, aluno.turma_id, solicitante_id, hora_prevista_saida, motivo || null, observacoes || null,
                 hora_prevista_retorno || null
+=======
+                aluno_id, aluno.nome, aluno.turma_id, solicitante_id, hora_prevista_saida, motivo || null, observacoes || null
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
             );
             res.status(201).json({ mensagem: `Pedido ${pedido_id} criado com sucesso e enviado à secretaria`, id_pedido: pedido_id });
         } catch (error) {
@@ -228,6 +236,7 @@ const pedidosController = {
             console.error('Erro ao buscar histórico do pedido:', error);
             res.status(500).json({ erro: "Erro ao buscar histórico do pedido" });
         }
+<<<<<<< HEAD
     },
 
     // 9. SECRETARIA/PORTARIA: lista pedidos atualmente atrasados (aluno em
@@ -252,6 +261,8 @@ const pedidosController = {
             console.error('Erro ao gerar estatísticas:', error);
             res.status(500).json({ erro: "Erro ao gerar estatísticas" });
         }
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     }
 };
 

@@ -4,7 +4,11 @@ const API_URL = 'http://localhost:3000/api';
 // 1. GERENCIAMENTO DE NAVEGAÇÃO E INTERFACE
 // ==========================================
 function mostrarTela(idTela) {
+<<<<<<< HEAD
     const telas = ['tela-inicio', 'tela-criar', 'tela-recorrentes', 'tela-historico', 'tela-conta'];
+=======
+    const telas = ['tela-inicio', 'tela-criar', 'tela-historico', 'tela-conta'];
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     telas.forEach(t => {
         const el = document.getElementById(t);
         if (el) el.style.display = 'none';
@@ -22,9 +26,12 @@ function mostrarTela(idTela) {
 
     if (idTela === 'tela-historico') {
         carregarHistorico();
+<<<<<<< HEAD
     } else if (idTela === 'tela-recorrentes') {
         carregarMeusAlunos();
         carregarPedidosRecorrentes();
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     }
 }
 
@@ -84,8 +91,12 @@ function aplicarTema(theme) {
 // ==========================================
 async function carregarMeusAlunos() {
     const selectAluno = document.getElementById('alunoId');
+<<<<<<< HEAD
     const selectAlunoRecorrente = document.getElementById('alunoIdRecorrente');
     if (!selectAluno && !selectAlunoRecorrente) return;
+=======
+    if (!selectAluno) return;
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
     try {
         const token = localStorage.getItem('token');
@@ -96,6 +107,7 @@ async function carregarMeusAlunos() {
         if (!resp.ok) throw new Error('Falha ao buscar alunos vinculados');
 
         const alunos = await resp.json();
+<<<<<<< HEAD
 
         [selectAluno, selectAlunoRecorrente].forEach(select => {
             if (!select) return;
@@ -120,6 +132,25 @@ async function carregarMeusAlunos() {
         [selectAluno, selectAlunoRecorrente].forEach(select => {
             if (select) select.innerHTML = '<option value="" disabled selected>Erro ao carregar alunos</option>';
         });
+=======
+        selectAluno.innerHTML = '';
+
+        if (alunos.length === 0) {
+            selectAluno.innerHTML = '<option value="" disabled selected>Nenhum aluno vinculado à sua conta</option>';
+            return;
+        }
+
+        selectAluno.innerHTML = '<option value="" disabled selected>Selecione o aluno</option>';
+        alunos.forEach(aluno => {
+            const option = document.createElement('option');
+            option.value = aluno.aluno_id;
+            option.textContent = aluno.turma ? `${aluno.nome} (${aluno.turma})` : aluno.nome;
+            selectAluno.appendChild(option);
+        });
+    } catch (err) {
+        console.error('Erro ao carregar alunos vinculados:', err);
+        selectAluno.innerHTML = '<option value="" disabled selected>Erro ao carregar alunos</option>';
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     }
 }
 
@@ -204,14 +235,21 @@ if (formSolicitacao) {
 
         const dataSaida = document.getElementById('dataSaida').value;
         const horaSaida = document.getElementById('horaSaida').value;
+<<<<<<< HEAD
         const horaRetorno = document.getElementById('horaRetorno').value;
         const horaPrevistaSaida = `${dataSaida}T${horaSaida}:00`;
         const horaPrevistaRetorno = horaRetorno ? `${dataSaida}T${horaRetorno}:00` : null;
+=======
+        const horaPrevistaSaida = `${dataSaida}T${horaSaida}:00`;
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
         const corpo = {
             aluno_id: document.getElementById('alunoId').value,
             hora_prevista_saida: horaPrevistaSaida,
+<<<<<<< HEAD
             hora_prevista_retorno: horaPrevistaRetorno,
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
             motivo: 'Saída para Almoço'
         };
 
@@ -286,6 +324,7 @@ if (formConta) {
 }
 
 // ==========================================
+<<<<<<< HEAD
 // 4b. PEDIDOS RECORRENTES
 // ==========================================
 const DIAS_SEMANA_LABEL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -407,6 +446,8 @@ async function carregarPedidosRecorrentes() {
 }
 
 // ==========================================
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 // 5. AUTENTICAÇÃO E INICIALIZAÇÃO
 // ==========================================
 function logout() {
@@ -421,12 +462,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+<<<<<<< HEAD
     const usuarioLogado = JSON.parse(localStorage.getItem('usuario') || '{}');
     if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
         const linkTrocarPainel = document.getElementById('linkTrocarPainel');
         if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
     }
 
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');

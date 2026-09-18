@@ -38,7 +38,11 @@ function iniciarParticulas(theme) {
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
+<<<<<<< HEAD
                 "color": { "value": "#0052cc" },
+=======
+            "color": { "value": "#0052cc" },
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                 "shape": { "type": "circle" },
                 "opacity": { "value": 0.5 },
                 "size": { "value": 3, "random": true },
@@ -230,6 +234,7 @@ async function carregarEmSaida() {
                 const horaSaida = pedido.hora_saida_real
                     ? new Date(pedido.hora_saida_real).toLocaleString('pt-BR')
                     : '-';
+<<<<<<< HEAD
                 const atrasado = pedido.atrasado === 1 || pedido.atrasado === true;
                 if (atrasado) tr.style.backgroundColor = '#fff5f5';
 
@@ -239,6 +244,11 @@ async function carregarEmSaida() {
 
                 tr.innerHTML = `
                     <td>${pedido.nome_aluno || 'Aluno'}${badgeAtraso}</td>
+=======
+
+                tr.innerHTML = `
+                    <td>${pedido.nome_aluno || 'Aluno'}</td>
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                     <td>${pedido.turma || '-'}</td>
                     <td>${pedido.responsavel || '-'}</td>
                     <td>${horaSaida}</td>
@@ -359,12 +369,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+<<<<<<< HEAD
     const usuarioLogado = JSON.parse(localStorage.getItem('usuario') || '{}');
     if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
         const linkTrocarPainel = document.getElementById('linkTrocarPainel');
         if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
     }
 
+=======
+>>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
