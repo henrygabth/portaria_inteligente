@@ -1,0 +1,115 @@
+/* portaria.css - Estilos específicos para a Portaria */
+
+/* Badge de Status: Liberado */
+.status-liberado {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    display: inline-block;
+    text-align: center;
+}
+
+/* Botão de Liberação na Tabela */
+.btn-liberar {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-liberar:hover {
+    background-color: #218838;
+}
+
+/* Botão de Cancelamento na Tabela (espelha o .btn-liberar para ficar alinhado) */
+.btn-cancelar {
+    background-color: var(--senai-red, #E52207);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-cancelar:hover {
+    background-color: #b81b06;
+}
+
+/* Container das ações (Liberar/Cancelar) lado a lado, alinhadas e formatadas */
+.acoes-portaria {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Área de Filtros do Histórico */
+.filter-area {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-select {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+    outline: none;
+    font-size: 14px;
+    color: #333333;
+    font-family: inherit;
+}
+
+.filter-select:focus {
+    border-color: #0052cc; /* Cor SENAI Blue */
+}
+
+/* Caixa de Status na Tela de Início */
+.status-container {
+    margin-top: 20px;
+}
+
+.status-box {
+    background: #eef2f7;
+    padding: 20px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    border-left: 5px solid #17a2b8; /* Azul claro para diferenciar */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.status-box i {
+    color: #17a2b8;
+    font-size: 24px;
+}
+
+.status-box span {
+    font-size: 16px;
+    color: #333;
+}
+
+.status-box strong {
+    font-size: 20px;
+    color: #17a2b8;
+}

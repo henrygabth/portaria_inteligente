@@ -1,0 +1,31 @@
+{
+  "name": "proj_liberacaoaluno",
+  "version": "1.0.0",
+  "description": "> Projeto desenvolvido no **SENAI** para automatizar e controlar a saída de alunos, integrando a autorização dos responsáveis diretamente com a liberação na portaria — eliminando conferências manuais e aumentando a segurança escolar.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/henrygabth/proj_liberacaoAluno.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/henrygabth/proj_liberacaoAluno/issues"
+  },
+  "homepage": "https://github.com/henrygabth/proj_liberacaoAluno#readme",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "google-auth-library": "^11.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.2",
+    "nodemailer": "^9.0.6"
+  }
+}

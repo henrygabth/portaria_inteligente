@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Solicitações</title>
+    <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="./css/home.css?v=4" rel="stylesheet">
+    <link href="./css/global.css?v=4" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="particles-js"></div>
+
+    <nav class="navbar">
+        <div class="menu-toggle" id="menuToggle">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+       <div class="logo">
+            <a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a>
+        </div>
+        <button id="themeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+    </nav>
+
+    <aside class="sidebar" id="sidebar">
+        <ul class="nav-links">
+            <li>
+                <a href="#" onclick="mostrarTela('tela-inicio')"><i class="fas fa-home"></i> Início</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-criar')"><i class="fas fa-plus-circle"></i> Criar Solicitação</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-recorrentes')"><i class="fas fa-redo"></i> Pedidos Recorrentes</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-historico')"><i class="fas fa-list-alt"></i> Histórico</a>
+            </li>
+            <li>
+                <a href="#" onclick="mostrarTela('tela-conta')"><i class="fas fa-user-circle"></i> Minha Conta</a>
+            </li>
+            <li id="linkTrocarPainel" style="display: none;">
+                <a href="selecionar-painel.html"><i class="fas fa-arrow-right-arrow-left"></i> Trocar de Painel</a>
+            </li>
+            <li>
+                <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
+            </li>
+        </ul>
+    </aside>
+
+    <main class="main-content" id="mainContent">
+
+        <section id="tela-inicio">
+            <h1>Bem-vindo ao Portal de Pais</h1>
+            <div class="card">
+                <h2>Sobre o Sistema de Liberação</h2>
+                <p style="margin-bottom: 15px; line-height: 1.5;">Este portal foi desenvolvido para garantir a segurança dos alunos e facilitar a comunicação entre a escola e as famílias. Através deste sistema, você pode:</p>
+
+                <ul style="list-style-position: inside; line-height: 1.8;">
+                    <li><i class="fas fa-check-circle" style="color: var(--senai-red);"></i> <strong>Criar Solicitações:</strong> Autorizar a saída do aluno para o almoço informando o nome e a turma.</li>
+                    <li><i class="fas fa-check-circle" style="color: var(--senai-red);"></i> <strong>Acompanhar Histórico:</strong> Verificar se a sua solicitação foi aprovada ou rejeitada pela secretaria.</li>
+                </ul>
+                <p style="margin-top: 15px; color: #666;"><em>Selecione uma opção no menu lateral para começar.</em></p>
+            </div>
+        </section>
+
+        <section id="tela-criar" style="display: none;">
+            <h1>Criar Solicitação de Saída</h1>
+            <div class="card">
+                <p style="margin-bottom: 15px;">Preencha os dados abaixo para autorizar a saída do aluno para o almoço.</p>
+
+                <form id="formSolicitacao" class="form-grid">
+                    <div class="input-group full-width">
+                        <label for="alunoId">Aluno</label>
+                        <select id="alunoId" required>
+                            <option value="" disabled selected>Carregando alunos vinculados...</option>
+                        </select>
+                        <small style="color: #666;">Não encontrou o aluno na lista? Procure a secretaria para vincular a conta.</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="dataSaida">Data da Saída</label>
+                        <input type="date" id="dataSaida" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="horaSaida">Horário da Saída</label>
+                        <input type="time" id="horaSaida" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="horaRetorno">Horário previsto de retorno (opcional)</label>
+                        <input type="time" id="horaRetorno">
+                        <small style="color: #666;">Se preenchido, a escola recebe um alerta automático caso o aluno não retorne até 5 minutos após esse horário.</small>
+                    </div>
+
+                    <div class="form-actions full-width" style="margin-top: 15px;">
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-paper-plane"></i> Enviar Solicitação
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="tela-recorrentes" style="display: none;">
+            <h1>Pedidos Recorrentes</h1>
+            <div class="card">
+                <p style="margin-bottom: 15px;">Cadastre um horário fixo (ex: toda sexta, saída 12h) e o sistema cria a solicitação sozinho nesse dia — só falta a secretaria aprovar.</p>
+
+                <form id="formRecorrente" class="form-grid">
+                    <div class="input-group full-width">
+                        <label for="alunoIdRecorrente">Aluno</label>
+                        <select id="alunoIdRecorrente" required>
+                            <option value="" disabled selected>Carregando alunos vinculados...</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="diaSemanaRecorrente">Dia da semana</label>
+                        <select id="diaSemanaRecorrente" required>
+                            <option value="1">Segunda-feira</option>
+                            <option value="2">Terça-feira</option>
+                            <option value="3">Quarta-feira</option>
+                            <option value="4">Quinta-feira</option>
+                            <option value="5">Sexta-feira</option>
+                            <option value="6">Sábado</option>
+                            <option value="0">Domingo</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="horaSaidaRecorrente">Horário de saída</label>
+                        <input type="time" id="horaSaidaRecorrente" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="horaRetornoRecorrente">Horário previsto de retorno (opcional)</label>
+                        <input type="time" id="horaRetornoRecorrente">
+                    </div>
+
+                    <div class="input-group full-width">
+                        <label for="motivoRecorrente">Motivo (opcional)</label>
+                        <input type="text" id="motivoRecorrente" placeholder="Ex: Saída para Almoço">
+                    </div>
+
+                    <div class="form-actions full-width" style="margin-top: 10px;">
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-redo"></i> Criar Pedido Recorrente
+                        </button>
+                    </div>
+                </form>
+
+                <table class="history-table" style="margin-top: 20px;">
+                    <thead>
+                        <tr>
+                            <th>Aluno</th>
+                            <th>Dia</th>
+                            <th>Saída</th>
+                            <th>Retorno</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaRecorrentesBody">
+                        <tr><td colspan="6">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="tela-historico" style="display: none;">
+            <h1>Histórico de Solicitações</h1>
+            <div class="card">
+                <p>Acompanhe o status das solicitações enviadas.</p>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Turma</th>
+                                <th>Data e Hora Prevista</th>
+                                <th>Status</th>
+                                <th>Motivo (se recusado/cancelado)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaHistoricoBody">
+                            <tr>
+                                <td colspan="5">Carregando histórico...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tela-conta" style="display: none;">
+            <h1>Minha Conta</h1>
+            <div class="card">
+                <h2>Dados do Responsável</h2>
+                <p style="margin-bottom: 20px; color: #666;">Atualize suas informações de contato e segurança.</p>
+
+                <form id="formConta" class="form-grid">
+                    <div class="input-group full-width">
+                        <label for="nomeResponsavel">Nome Completo</label>
+                        <input type="text" id="nomeResponsavel" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="cpfResponsavel">CPF</label>
+                        <input type="text" id="cpfResponsavel" disabled style="background-color: #f0f0f0; cursor: not-allowed;" title="O CPF não pode ser alterado pelo portal">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="telefoneResponsavel">Telefone / WhatsApp</label>
+                        <input type="tel" id="telefoneResponsavel" required>
+                    </div>
+
+                    <div class="input-group full-width">
+                        <label for="emailResponsavel">E-mail</label>
+                        <input type="email" id="emailResponsavel" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="senhaAtual">Senha Atual</label>
+                        <input type="password" id="senhaAtual" placeholder="Digite para confirmar mudanças">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="novaSenha">Nova Senha</label>
+                        <input type="password" id="novaSenha" placeholder="Deixe em branco para manter">
+                    </div>
+
+                    <div class="form-actions full-width" style="margin-top: 10px;">
+                        <button type="submit" class="btn-submit">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="./js/general/home.js?v=2"></script>
+</body>
+</html>

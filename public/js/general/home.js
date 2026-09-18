@@ -1,0 +1,458 @@
+const API_URL = 'http://localhost:3000/api';
+
+// ==========================================
+// 1. GERENCIAMENTO DE NAVEGAÇÃO E INTERFACE
+// ==========================================
+function mostrarTela(idTela) {
+    const telas = ['tela-inicio', 'tela-criar', 'tela-recorrentes', 'tela-historico', 'tela-conta'];
+    telas.forEach(t => {
+        const el = document.getElementById(t);
+        if (el) el.style.display = 'none';
+    });
+
+    const telaAtiva = document.getElementById(idTela);
+    if (telaAtiva) telaAtiva.style.display = 'block';
+
+    const sidebar = document.getElementById('sidebar');
+    const menuToggle = document.getElementById('menuToggle');
+    if (window.innerWidth <= 768 && sidebar) {
+        sidebar.classList.remove('open');
+        if (menuToggle) menuToggle.classList.remove('active');
+    }
+
+    if (idTela === 'tela-historico') {
+        carregarHistorico();
+    } else if (idTela === 'tela-recorrentes') {
+        carregarMeusAlunos();
+        carregarPedidosRecorrentes();
+    }
+}
+
+// ==========================================
+// 2. CONFIGURAÇÃO DE TEMA E PARTÍCULAS
+// ==========================================
+function iniciarParticulas(theme) {
+    if (window.pJSDom && window.pJSDom.length > 0) {
+        window.pJSDom.forEach(dom => dom.pJS.fn.vendors.destroypJS());
+        window.pJSDom = [];
+    }
+
+    const corLinha = theme === 'dark' ? '#FFFFFF' : '#0A192F';
+
+    particlesJS("particles-js", {
+        "particles": {
+            "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
+            "color": { "value": "#0052cc" },
+            "shape": { "type": "circle" },
+            "opacity": { "value": 0.5 },
+            "size": { "value": 3, "random": true },
+            "line_linked": {
+                "enable": true,
+                "distance": 150,
+                "color": corLinha,
+                "opacity": 0.2,
+                "width": 1
+            },
+            "move": { "enable": true, "speed": 2 }
+        },
+        "retina_detect": true
+    });
+}
+
+function aplicarTema(theme) {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = themeToggle ? themeToggle.querySelector('i') : null;
+
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        if (themeIcon) {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        }
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        if (themeIcon) {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        }
+    }
+    iniciarParticulas(theme);
+}
+
+// ==========================================
+// 3. CARREGAMENTO DE DADOS (API / BACKEND)
+// ==========================================
+async function carregarMeusAlunos() {
+    const selectAluno = document.getElementById('alunoId');
+    const selectAlunoRecorrente = document.getElementById('alunoIdRecorrente');
+    if (!selectAluno && !selectAlunoRecorrente) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const resp = await fetch(`${API_URL}/responsaveis/meus-alunos`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!resp.ok) throw new Error('Falha ao buscar alunos vinculados');
+
+        const alunos = await resp.json();
+
+        [selectAluno, selectAlunoRecorrente].forEach(select => {
+            if (!select) return;
+
+            select.innerHTML = '';
+
+            if (alunos.length === 0) {
+                select.innerHTML = '<option value="" disabled selected>Nenhum aluno vinculado à sua conta</option>';
+                return;
+            }
+
+            select.innerHTML = '<option value="" disabled selected>Selecione o aluno</option>';
+            alunos.forEach(aluno => {
+                const option = document.createElement('option');
+                option.value = aluno.aluno_id;
+                option.textContent = aluno.turma ? `${aluno.nome} (${aluno.turma})` : aluno.nome;
+                select.appendChild(option);
+            });
+        });
+    } catch (err) {
+        console.error('Erro ao carregar alunos vinculados:', err);
+        [selectAluno, selectAlunoRecorrente].forEach(select => {
+            if (select) select.innerHTML = '<option value="" disabled selected>Erro ao carregar alunos</option>';
+        });
+    }
+}
+
+async function carregarHistorico() {
+    const token = localStorage.getItem('token');
+    const usuarioSalvo = JSON.parse(localStorage.getItem('usuario') || '{}');
+    const tbody = document.getElementById('tabelaHistoricoBody');
+
+    if (!token || !usuarioSalvo.id_usuario || !tbody) return;
+
+    try {
+        const resp = await fetch(`${API_URL}/pedidos/solicitante/${usuarioSalvo.id_usuario}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!resp.ok) throw new Error('Falha ao buscar histórico');
+
+        const pedidos = await resp.json();
+        tbody.innerHTML = '';
+
+        if (pedidos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">Nenhuma solicitação encontrada.</td></tr>';
+            return;
+        }
+
+        pedidos.forEach(pedido => {
+            const tr = document.createElement('tr');
+            const dataHora = pedido.hora_prevista_saida 
+                ? new Date(pedido.hora_prevista_saida).toLocaleString('pt-BR') 
+                : '-';
+            
+            const statusClass = (pedido.status || 'PENDENTE').toLowerCase();
+            const mostraMotivo = pedido.status === 'RECUSADA' || pedido.status === 'CANCELADA';
+            const motivo = mostraMotivo ? (pedido.observacao || '-') : '-';
+
+            tr.innerHTML = `
+                <td>${pedido.nome_aluno || 'Aluno'}</td>
+                <td>${pedido.turma || '-'}</td>
+                <td>${dataHora}</td>
+                <td><span class="status status-${statusClass}">${pedido.status}</span></td>
+                <td>${motivo}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('Erro ao carregar histórico:', err);
+        tbody.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao carregar histórico.</td></tr>';
+    }
+}
+
+async function preencherDadosConta() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const resp = await fetch(`${API_URL}/usuarios/conta`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!resp.ok) throw new Error('Falha ao buscar dados da conta');
+
+        const usuario = await resp.json();
+
+        if (document.getElementById('nomeResponsavel')) document.getElementById('nomeResponsavel').value = usuario.nome || '';
+        if (document.getElementById('cpfResponsavel')) document.getElementById('cpfResponsavel').value = usuario.cpf || '';
+        if (document.getElementById('telefoneResponsavel')) document.getElementById('telefoneResponsavel').value = usuario.telefone || '';
+        if (document.getElementById('emailResponsavel')) document.getElementById('emailResponsavel').value = usuario.email || '';
+    } catch (err) {
+        console.error('Erro ao carregar dados da conta:', err);
+    }
+}
+
+// ==========================================
+// 4. SUBMISSÃO DE FORMULÁRIOS
+// ==========================================
+const formSolicitacao = document.getElementById('formSolicitacao');
+if (formSolicitacao) {
+    formSolicitacao.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
+        const usuarioSalvo = JSON.parse(localStorage.getItem('usuario') || '{}');
+
+        const dataSaida = document.getElementById('dataSaida').value;
+        const horaSaida = document.getElementById('horaSaida').value;
+        const horaRetorno = document.getElementById('horaRetorno').value;
+        const horaPrevistaSaida = `${dataSaida}T${horaSaida}:00`;
+        const horaPrevistaRetorno = horaRetorno ? `${dataSaida}T${horaRetorno}:00` : null;
+
+        const corpo = {
+            aluno_id: document.getElementById('alunoId').value,
+            hora_prevista_saida: horaPrevistaSaida,
+            hora_prevista_retorno: horaPrevistaRetorno,
+            motivo: 'Saída para Almoço'
+        };
+
+        try {
+            const resp = await fetch(`${API_URL}/pedidos/cadastrar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(corpo)
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok) {
+                alert('Solicitação de saída para almoço enviada com sucesso!');
+                formSolicitacao.reset();
+                mostrarTela('tela-historico');
+            } else {
+                alert('Erro: ' + (data.erro || 'Falha ao enviar solicitação'));
+            }
+        } catch (err) {
+            alert('Erro de conexão com o servidor');
+        }
+    });
+}
+
+const formConta = document.getElementById('formConta');
+if (formConta) {
+    formConta.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
+
+        const corpo = {
+            nome: document.getElementById('nomeResponsavel').value.trim(),
+            telefone: document.getElementById('telefoneResponsavel').value.trim(),
+            email: document.getElementById('emailResponsavel').value.trim(),
+            senhaAtual: document.getElementById('senhaAtual').value,
+            novaSenha: document.getElementById('novaSenha').value
+        };
+
+        if (!corpo.novaSenha) {
+            delete corpo.novaSenha;
+            delete corpo.senhaAtual;
+        }
+
+        try {
+            const resp = await fetch(`${API_URL}/usuarios/conta`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(corpo)
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok) {
+                alert('Dados atualizados com sucesso!');
+                document.getElementById('senhaAtual').value = '';
+                document.getElementById('novaSenha').value = '';
+                preencherDadosConta();
+            } else {
+                alert('Erro: ' + (data.erro || 'Falha ao atualizar conta'));
+            }
+        } catch (err) {
+            alert('Erro de conexão com o servidor');
+        }
+    });
+}
+
+// ==========================================
+// 4b. PEDIDOS RECORRENTES
+// ==========================================
+const DIAS_SEMANA_LABEL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+const formRecorrente = document.getElementById('formRecorrente');
+if (formRecorrente) {
+    formRecorrente.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
+
+        const corpo = {
+            aluno_id: document.getElementById('alunoIdRecorrente').value,
+            dia_semana: document.getElementById('diaSemanaRecorrente').value,
+            hora_saida: document.getElementById('horaSaidaRecorrente').value,
+            hora_retorno: document.getElementById('horaRetornoRecorrente').value || null,
+            motivo: document.getElementById('motivoRecorrente').value.trim() || null
+        };
+
+        try {
+            const resp = await fetch(`${API_URL}/pedidos-recorrentes/cadastrar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(corpo)
+            });
+
+            const data = await resp.json();
+
+            if (resp.ok) {
+                alert('Pedido recorrente criado com sucesso!');
+                formRecorrente.reset();
+                carregarPedidosRecorrentes();
+            } else {
+                alert('Erro: ' + (data.erro || 'Falha ao criar pedido recorrente'));
+            }
+        } catch (err) {
+            alert('Erro de conexão com o servidor');
+        }
+    });
+}
+
+async function carregarPedidosRecorrentes() {
+    const token = localStorage.getItem('token');
+    const tbody = document.getElementById('tabelaRecorrentesBody');
+    if (!tbody) return;
+
+    try {
+        const resp = await fetch(`${API_URL}/pedidos-recorrentes/meus`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!resp.ok) throw new Error('Falha ao buscar pedidos recorrentes');
+
+        const lista = await resp.json();
+        tbody.innerHTML = '';
+
+        if (lista.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6">Nenhum pedido recorrente cadastrado.</td></tr>';
+            return;
+        }
+
+        lista.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.nome_aluno}${item.turma ? ` (${item.turma})` : ''}</td>
+                <td>${DIAS_SEMANA_LABEL[item.dia_semana]}</td>
+                <td>${item.hora_saida?.slice(0, 5) || '-'}</td>
+                <td>${item.hora_retorno ? item.hora_retorno.slice(0, 5) : '-'}</td>
+                <td>${item.ativo ? 'Ativo' : 'Pausado'}</td>
+                <td style="white-space: nowrap;">
+                    <button type="button" class="btn-toggle-recorrente" data-id="${item.recorrente_id}" data-ativo="${item.ativo ? 0 : 1}">
+                        ${item.ativo ? 'Pausar' : 'Ativar'}
+                    </button>
+                    <button type="button" class="btn-remover-recorrente" data-id="${item.recorrente_id}">Remover</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.btn-toggle-recorrente').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    const resp = await fetch(`${API_URL}/pedidos-recorrentes/status/${btn.dataset.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ ativo: btn.dataset.ativo === '1' })
+                    });
+                    if (resp.ok) carregarPedidosRecorrentes();
+                    else alert('Erro ao atualizar pedido recorrente');
+                } catch (err) {
+                    alert('Erro de conexão com o servidor');
+                }
+            });
+        });
+
+        tbody.querySelectorAll('.btn-remover-recorrente').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Remover este pedido recorrente?')) return;
+                try {
+                    const resp = await fetch(`${API_URL}/pedidos-recorrentes/${btn.dataset.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (resp.ok) carregarPedidosRecorrentes();
+                    else alert('Erro ao remover pedido recorrente');
+                } catch (err) {
+                    alert('Erro de conexão com o servidor');
+                }
+            });
+        });
+    } catch (err) {
+        console.error('Erro ao carregar pedidos recorrentes:', err);
+        tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar pedidos recorrentes.</td></tr>';
+    }
+}
+
+// ==========================================
+// 5. AUTENTICAÇÃO E INICIALIZAÇÃO
+// ==========================================
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    window.location.href = 'login.html';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!localStorage.getItem('token')) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    const usuarioLogado = JSON.parse(localStorage.getItem('usuario') || '{}');
+    if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
+        const linkTrocarPainel = document.getElementById('linkTrocarPainel');
+        if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
+    }
+
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+
+    if (menuToggle && sidebar && mainContent) {
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('active');
+            sidebar.classList.toggle('open');
+            mainContent.classList.toggle('shifted');
+        });
+    }
+
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            aplicarTema(newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    aplicarTema(savedTheme);
+
+    carregarMeusAlunos();
+    preencherDadosConta();
+    carregarHistorico();
+});
