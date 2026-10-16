@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 function mostrarTela(idTela) {
     const telas = ['tela-inicio', 'tela-saidas', 'tela-retorno', 'tela-historico'];

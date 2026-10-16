@@ -1,5 +1,5 @@
 // URL base ajustada com o prefixo /api
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 // Elemento de Loading Global
 const loadingDiv = document.createElement('div');

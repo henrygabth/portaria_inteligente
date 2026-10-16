@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 // ==========================================
 // 1. GERENCIAMENTO DE NAVEGAÇÃO E INTERFACE

@@ -1,5 +1,5 @@
 // Ajustado para incluir o prefixo /api que está definido no index.js
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 let pedidoSelecionado = null;
 
 // ==========================================
