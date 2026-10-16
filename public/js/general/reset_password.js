@@ -1,4 +1,4 @@
-const API_URL_RESET = 'http://localhost:3000/api';
+const API_URL_RESET = '/api';
 
 function pegarTokenDaURL() {
     const params = new URLSearchParams(window.location.search);

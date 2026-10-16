@@ -1,7 +1,7 @@
 // ─── conta.js — cole este script na sua página de conta ──────────────────────
 // Ele carrega os dados do responsável logado e envia as alterações para o backend.
 
-const API = 'http://localhost:3000/api'; // Ajuste para o endereço do seu servidor
+const API = '/api'; // Ajuste para o endereço do seu servidor
 
 // ─── Carrega os dados ao abrir a página ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
