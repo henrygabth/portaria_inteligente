@@ -38,11 +38,7 @@ function iniciarParticulas(theme) {
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
-<<<<<<< HEAD
                 "color": { "value": "#0052cc" },
-=======
-            "color": { "value": "#0052cc" },
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                 "shape": { "type": "circle" },
                 "opacity": { "value": 0.5 },
                 "size": { "value": 3, "random": true },
@@ -81,6 +77,43 @@ function aplicarTema(theme) {
 }
 
 // ==========================================
+// 0. FUNÇÕES AUXILIARES (iguais nas duas telas)
+// ==========================================
+function esc(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function mesmoDia(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+// Mostra só a hora quando é hoje; quando é outro dia, mostra dia/mês + hora.
+function formatarHorario(valor) {
+    if (!valor) return '-';
+    const d = new Date(valor);
+    const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (mesmoDia(d, new Date())) return hora;
+    return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${hora}`;
+}
+
+function estaAtrasado(pedido) {
+    return pedido.atrasado === 1 || pedido.atrasado === true || pedido.atrasado === '1';
+}
+
+function mensagemVazia(tbody, texto) {
+    tbody.innerHTML = `<tr><td colspan="7">${texto}</td></tr>`;
+}
+
+function mensagemErro(tbody, texto) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color:red;">${texto}</td></tr>`;
+}
+
+function celulaAluno(pedido) {
+    const etiqueta = pedido.recorrente_id ? '<span class="etiqueta-aluno">Horário fixo</span>' : '';
+    return `${esc(pedido.nome_aluno || 'Aluno')}${etiqueta}`;
+}
+
+// ==========================================
 // 1. SAÍDAS AUTORIZADAS (status = APROVADA) -> Liberar aluno
 // ==========================================
 async function carregarSaidas() {
@@ -99,15 +132,21 @@ async function carregarSaidas() {
         tbody.innerHTML = '';
 
         if (dados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">Nenhuma saída pendente de liberação.</td></tr>';
+            mensagemVazia(tbody, 'Nenhuma saída pendente de liberação.');
         } else {
             dados.forEach(pedido => {
                 const tr = document.createElement('tr');
+                const autorizadoPor = pedido.secretario || pedido.aprovador;
                 tr.innerHTML = `
-                    <td>${pedido.nome_aluno || 'Aluno'}</td>
-                    <td>${pedido.turma || '-'}</td>
-                    <td>${pedido.responsavel || '-'}</td>
-                    <td>${pedido.aprovador || '-'}</td>
+                    <td>${celulaAluno(pedido)}</td>
+                    <td>${esc(pedido.turma || '-')}</td>
+                    <td>${esc(pedido.responsavel || '-')}</td>
+                    <td>${formatarHorario(pedido.hora_prevista_saida)}</td>
+                    <td>${formatarHorario(pedido.hora_prevista_retorno)}</td>
+                    <td>
+                        <span class="status status-aprovada">Autorizado</span>
+                        ${autorizadoPor ? `<span class="situacao-detalhe">por ${esc(autorizadoPor)}</span>` : ''}
+                    </td>
                     <td>
                         <div class="acoes-portaria">
                             <button class="btn-liberar" onclick="liberarSaida(${pedido.pedidos_saida_id})">
@@ -127,7 +166,7 @@ async function carregarSaidas() {
         if (elemQtd) elemQtd.textContent = dados.length;
     } catch (err) {
         console.error('Erro ao carregar saídas:', err);
-        tbody.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao carregar saídas autorizadas.</td></tr>';
+        mensagemErro(tbody, 'Erro ao carregar saídas autorizadas.');
     }
 }
 
@@ -227,35 +266,30 @@ async function carregarEmSaida() {
         tbody.innerHTML = '';
 
         if (dados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">Nenhum aluno aguardando retorno no momento.</td></tr>';
+            mensagemVazia(tbody, 'Nenhum aluno aguardando retorno no momento.');
         } else {
             dados.forEach(pedido => {
                 const tr = document.createElement('tr');
-                const horaSaida = pedido.hora_saida_real
-                    ? new Date(pedido.hora_saida_real).toLocaleString('pt-BR')
-                    : '-';
-<<<<<<< HEAD
-                const atrasado = pedido.atrasado === 1 || pedido.atrasado === true;
-                if (atrasado) tr.style.backgroundColor = '#fff5f5';
-
-                const badgeAtraso = atrasado
-                    ? '<span style="display:inline-block; margin-left:6px; padding:2px 8px; border-radius:10px; background:#E52207; color:#fff; font-size:11px; font-weight:700;">ATRASADO</span>'
-                    : '';
+                const atrasado = estaAtrasado(pedido);
+                if (atrasado) tr.classList.add('linha-atrasada');
 
                 tr.innerHTML = `
-                    <td>${pedido.nome_aluno || 'Aluno'}${badgeAtraso}</td>
-=======
-
-                tr.innerHTML = `
-                    <td>${pedido.nome_aluno || 'Aluno'}</td>
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
-                    <td>${pedido.turma || '-'}</td>
-                    <td>${pedido.responsavel || '-'}</td>
-                    <td>${horaSaida}</td>
+                    <td>${celulaAluno(pedido)}</td>
+                    <td>${esc(pedido.turma || '-')}</td>
+                    <td>${esc(pedido.responsavel || '-')}</td>
+                    <td>${formatarHorario(pedido.hora_saida_real)}</td>
+                    <td>${formatarHorario(pedido.hora_prevista_retorno)}</td>
                     <td>
-                        <button class="btn-liberar" onclick="registrarRetorno(${pedido.pedidos_saida_id})" style="background: var(--senai-red, #E52207); color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-undo"></i> Registrar Retorno
-                        </button>
+                        ${atrasado
+                            ? '<span class="status status-atrasado">Atrasado</span>'
+                            : '<span class="status status-em_saida">Fora da escola</span>'}
+                    </td>
+                    <td>
+                        <div class="acoes-portaria">
+                            <button class="btn-retorno" onclick="registrarRetorno(${pedido.pedidos_saida_id})">
+                                <i class="fas fa-undo"></i> Registrar Retorno
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -266,7 +300,7 @@ async function carregarEmSaida() {
         if (elemQtdFora) elemQtdFora.textContent = dados.length;
     } catch (err) {
         console.error('Erro ao carregar alunos fora da escola:', err);
-        tbody.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao carregar alunos fora da escola.</td></tr>';
+        mensagemErro(tbody, 'Erro ao carregar alunos fora da escola.');
     }
 }
 
@@ -296,6 +330,67 @@ async function registrarRetorno(id) {
 // ==========================================
 // 3. HISTÓRICO (status = CONCLUIDA ou CANCELADA)
 // ==========================================
+let historicoPortariaCache = [];
+
+function dentroDoPeriodo(valor, periodo) {
+    if (periodo === 'todos' || !valor) return true;
+    const d = new Date(valor);
+    const agora = new Date();
+    if (periodo === 'semana') {
+        const inicio = new Date(agora);
+        inicio.setHours(0, 0, 0, 0);
+        inicio.setDate(inicio.getDate() - 6);
+        return d >= inicio;
+    }
+    if (periodo === 'mes') return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+    if (periodo === 'ano') return d.getFullYear() === agora.getFullYear();
+    return true;
+}
+
+function renderizarHistoricoPortaria() {
+    const tbody = document.getElementById('tabelaHistoricoPortariaBody');
+    if (!tbody) return;
+
+    const periodo = document.getElementById('filtroPortaria')?.value || 'todos';
+    const dados = historicoPortariaCache.filter(p =>
+        dentroDoPeriodo(p.hora_retorno_real || p.hora_saida_real || p.data_criacao, periodo)
+    );
+
+    tbody.innerHTML = '';
+
+    if (dados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7">Nenhum histórico de saída registrado.</td></tr>';
+        return;
+    }
+
+    dados.forEach(pedido => {
+        const tr = document.createElement('tr');
+        const horaSaida = pedido.hora_saida_real ? new Date(pedido.hora_saida_real).toLocaleString('pt-BR') : '-';
+        const horaRetorno = pedido.hora_retorno_real ? new Date(pedido.hora_retorno_real).toLocaleString('pt-BR') : '-';
+
+        let statusLabel;
+        if (pedido._situacao === 'CANCELADA') {
+            statusLabel = '<span class="status status-cancelada">Cancelado</span>';
+        } else if (pedido._comAtraso) {
+            statusLabel = '<span class="status status-atrasado">Voltou com atraso</span>';
+        } else {
+            statusLabel = '<span class="status status-aprovada">Concluído</span>';
+        }
+        const motivo = pedido._situacao === 'CANCELADA' ? esc(pedido.observacao || '-') : '-';
+
+        tr.innerHTML = `
+            <td>${celulaAluno(pedido)}</td>
+            <td>${esc(pedido.turma || '-')}</td>
+            <td>${horaSaida}</td>
+            <td>${horaRetorno}</td>
+            <td>${esc(pedido.responsavel || '-')}</td>
+            <td>${statusLabel}</td>
+            <td>${motivo}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 async function carregarHistoricoPortaria() {
     const token = localStorage.getItem('token');
     const tbody = document.getElementById('tabelaHistoricoPortariaBody');
@@ -313,41 +408,19 @@ async function carregarHistoricoPortaria() {
 
         if (!respConcluidas.ok || !respCanceladas.ok) throw new Error('Falha ao carregar histórico');
 
-        const concluidas = (await respConcluidas.json()).map(p => ({ ...p, _situacao: 'CONCLUIDA' }));
+        // Mesma tolerância de 5 minutos usada no alerta de atraso
+        const concluidas = (await respConcluidas.json()).map(p => ({
+            ...p,
+            _situacao: 'CONCLUIDA',
+            _comAtraso: !!(p.hora_prevista_retorno && p.hora_retorno_real &&
+                new Date(p.hora_retorno_real) - new Date(p.hora_prevista_retorno) > 5 * 60000)
+        }));
         const canceladas = (await respCanceladas.json()).map(p => ({ ...p, _situacao: 'CANCELADA' }));
 
-        const dados = [...concluidas, ...canceladas];
-        tbody.innerHTML = '';
+        const momento = p => new Date(p.hora_retorno_real || p.hora_saida_real || p.data_criacao || 0).getTime();
+        historicoPortariaCache = [...concluidas, ...canceladas].sort((a, b) => momento(b) - momento(a));
 
-        if (dados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7">Nenhum histórico de saída registrado.</td></tr>';
-            return;
-        }
-
-        dados.forEach(pedido => {
-            const tr = document.createElement('tr');
-            const horaSaida = pedido.hora_saida_real
-                ? new Date(pedido.hora_saida_real).toLocaleString('pt-BR')
-                : '-';
-            const horaRetorno = pedido.hora_retorno_real
-                ? new Date(pedido.hora_retorno_real).toLocaleString('pt-BR')
-                : '-';
-            const statusLabel = pedido._situacao === 'CANCELADA'
-                ? '<span style="color: var(--senai-red, #E52207); font-weight: bold;">Cancelado</span>'
-                : '<span style="color: green; font-weight: bold;">Concluído</span>';
-            const motivo = pedido._situacao === 'CANCELADA' ? (pedido.observacao || '-') : '-';
-
-            tr.innerHTML = `
-                <td>${pedido.nome_aluno || 'Aluno'}</td>
-                <td>${pedido.turma || '-'}</td>
-                <td>${horaSaida}</td>
-                <td>${horaRetorno}</td>
-                <td>${pedido.responsavel || '-'}</td>
-                <td>${statusLabel}</td>
-                <td>${motivo}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+        renderizarHistoricoPortaria();
     } catch (err) {
         console.error('Erro ao carregar histórico:', err);
         tbody.innerHTML = '<tr><td colspan="7" style="color:red;">Erro ao carregar histórico de saídas.</td></tr>';
@@ -369,15 +442,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-<<<<<<< HEAD
     const usuarioLogado = JSON.parse(localStorage.getItem('usuario') || '{}');
     if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
         const linkTrocarPainel = document.getElementById('linkTrocarPainel');
         if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
     }
 
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
@@ -403,7 +473,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     aplicarTema(savedTheme);
 
+    document.getElementById('filtroPortaria')?.addEventListener('change', renderizarHistoricoPortaria);
+
     carregarSaidas();
     carregarEmSaida();
     carregarHistoricoPortaria();
+
+    // Atualização automática: pedidos que a secretaria aprova aparecem na portaria
+    // sem precisar recarregar a página (e o contrário também).
+    setInterval(() => {
+        if (document.hidden) return;
+        carregarSaidas();
+        carregarEmSaida();
+    }, 15000);
 });

@@ -4,6 +4,7 @@
   "description": "> Projeto desenvolvido no **SENAI** para automatizar e controlar a saída de alunos, integrando a autorização dos responsáveis diretamente com a liberação na portaria — eliminando conferências manuais e aumentando a segurança escolar.",
   "main": "index.js",
   "scripts": {
+    "test:email": "node testar_email.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

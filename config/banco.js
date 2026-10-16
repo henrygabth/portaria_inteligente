@@ -22,4 +22,21 @@ const conexaoBanco = mysql.createPool({
     queueLimit: 0
 });
 
+// O horário previsto de saída/retorno vem do navegador (horário local da escola),
+// mas NOW() do MySQL usa o fuso do servidor de banco. Se os dois fusos forem
+// diferentes, "atrasado", "pedido do dia" etc. ficam errados. Aqui a sessão de
+// cada conexão passa a usar o mesmo fuso do servidor Node.
+function offsetLocal() {
+    const min = -new Date().getTimezoneOffset();
+    const sinal = min >= 0 ? '+' : '-';
+    const abs = Math.abs(min);
+    return `${sinal}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
+}
+
+conexaoBanco.pool.on('connection', (conn) => {
+    conn.query(`SET time_zone = '${offsetLocal()}'`, (err) => {
+        if (err) console.warn('[banco] Não foi possível ajustar o fuso horário da sessão:', err.message);
+    });
+});
+
 module.exports = conexaoBanco;

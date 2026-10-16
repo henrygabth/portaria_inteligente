@@ -4,37 +4,16 @@ const responsaveisAlunosModel = require('../model/responsaveisAlunosModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const { SEGREDO } = require('../middlewares/authenticar');
 const { OAuth2Client } = require("google-auth-library");
 const { enviarEmail } = require('../utils/email');
 const { montarEmailHtml } = require('../utils/emailTemplate');
+const { verificarEmail } = require('../utils/verificarEmail');
+
+const MSG_PERFIL_DESATIVADO = 'Este perfil está desativado. Procure a secretaria da escola para reativar o seu acesso.';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "725327633780-mt7ue9m9s39dgcq4n80487s82aheh9aq.apps.googleusercontent.com";
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-// Função para obter o transporter dinamicamente (garante leitura correta do process.env)
-function getTransporter() {
-    const emailUser = process.env.EMAIL_USER || "portariainteligente950@gmail.com";
-    const emailPass = process.env.EMAIL_PASS;
-
-    if (!emailPass) {
-        console.error("ALERTA: process.env.EMAIL_PASS nao esta definido no .env!");
-    }
-
-    return nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // TLS/SSL direto na porta 465
-        auth: {
-            user: emailUser,
-            pass: emailPass
-        },
-        // Evita ECONNREFUSED quando a máquina resolve smtp.gmail.com para IPv6
-        // sem rota disponível.
-        family: 4
-    });
-}
 
 function gerarSenhaAleatoria() {
     return crypto.randomBytes(6).toString('base64')
@@ -54,6 +33,11 @@ const usuariosController = {
             const usuarioExistente = await usuariosModel.buscarPorEmail(email);
             if (usuarioExistente) {
                 return res.status(400).json({ erro: 'E-mail já cadastrado.' });
+            }
+
+            const checagemEmail = await verificarEmail(email);
+            if (!checagemEmail.valido) {
+                return res.status(400).json({ erro: checagemEmail.motivo, sugestao: checagemEmail.sugestao });
             }
 
             const senhaHash = await bcrypt.hash(senha, 10);
@@ -123,6 +107,18 @@ const usuariosController = {
                 return res.status(401).json({ erro: 'Credenciais inválidas.' });
             }
 
+            // Só depois de confirmar a senha avisamos que o perfil está desativado
+            // (assim não dá para descobrir quais e-mails existem sem saber a senha).
+            if (!usuariosModel.estaAtivo(usuario)) {
+                return res.status(403).json({ erro: MSG_PERFIL_DESATIVADO });
+            }
+
+            // Primeiro login: sugere trocar a senha (o aviso aparece uma única vez).
+            const sugerirTrocaSenha = Number(usuario.primeiro_acesso) === 1;
+            if (sugerirTrocaSenha) {
+                await usuariosModel.marcarPrimeiroAcessoConcluido(usuario.id_usuario);
+            }
+
             const token = jwt.sign(
                 { id_usuario: usuario.id_usuario, tipo_usuario: usuario.tipo_usuario, nome: usuario.nome },
                 SEGREDO,
@@ -144,6 +140,7 @@ const usuariosController = {
                 mensagem: 'Login realizado com sucesso!',
                 token,
                 redirecionarPara,
+                sugerirTrocaSenha,
                 usuario: {
                     id_usuario: usuario.id_usuario,
                     nome: usuario.nome,
@@ -175,6 +172,15 @@ const usuariosController = {
                 return res.status(404).json({ erro: 'Nenhuma conta cadastrada encontrada para este e-mail do Google.' });
             }
 
+            if (!usuariosModel.estaAtivo(usuario)) {
+                return res.status(403).json({ erro: MSG_PERFIL_DESATIVADO });
+            }
+
+            const sugerirTrocaSenha = Number(usuario.primeiro_acesso) === 1;
+            if (sugerirTrocaSenha) {
+                await usuariosModel.marcarPrimeiroAcessoConcluido(usuario.id_usuario);
+            }
+
             const token = jwt.sign(
                 { id_usuario: usuario.id_usuario, tipo_usuario: usuario.tipo_usuario, nome: usuario.nome },
                 SEGREDO,
@@ -194,6 +200,7 @@ const usuariosController = {
                 mensagem: 'Autenticação via Google realizada com sucesso!',
                 token,
                 redirecionarPara,
+                sugerirTrocaSenha,
                 usuario: {
                     id_usuario: usuario.id_usuario,
                     nome: usuario.nome,
@@ -279,7 +286,7 @@ const usuariosController = {
             if (!email) return res.status(400).json({ erro: 'E-mail é obrigatório.' });
 
             const usuario = await usuariosModel.buscarPorEmail(email);
-            if (!usuario) {
+            if (!usuario || !usuariosModel.estaAtivo(usuario)) {
                 return res.json({ mensagem: 'Se o e-mail estiver cadastrado, você receberá um link de redefinição.' });
             }
 
@@ -291,10 +298,8 @@ const usuariosController = {
 
             const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
             const linkRecuperacao = `${baseUrl}/reset_password.html?token=${tokenReset}`;
-            const emailSistema = process.env.EMAIL_USER || "portariainteligente950@gmail.com";
-
             const mailOptions = {
-                from: `"Controle de Saidas" <${emailSistema}>`,
+                fromName: 'Controle de Saidas',
                 to: usuario.email,
                 subject: 'Redefinicao de Senha - Controle de Saidas',
                 text: `Olá ${usuario.nome}, acesse o link para redefinir sua senha: ${linkRecuperacao}`,
@@ -307,8 +312,7 @@ const usuariosController = {
                 })
             };
 
-            const transporter = getTransporter();
-            await transporter.sendMail(mailOptions);
+            await enviarEmail(mailOptions);
 
             return res.json({ mensagem: 'Se o e-mail estiver cadastrado, você receberá um link de redefinição.' });
         } catch (error) {
@@ -337,6 +341,74 @@ const usuariosController = {
         } catch (error) {
             console.error('Erro ao redefinir senha:', error);
             return res.status(400).json({ erro: 'Link inválido ou expirado.' });
+        }
+    },
+
+    // Verifica se um e-mail é válido e se o domínio existe (usado pelo formulário
+    // de vincular responsável antes de enviar).
+    verificarEmail: async (req, res) => {
+        try {
+            const { email } = req.body;
+            const resultado = await verificarEmail(email);
+            const existente = resultado.valido ? await usuariosModel.buscarPorEmail(String(email).trim()) : null;
+            return res.json({ ...resultado, jaCadastrado: !!existente });
+        } catch (error) {
+            console.error('Erro ao verificar e-mail:', error);
+            return res.status(500).json({ erro: 'Erro ao verificar e-mail.' });
+        }
+    },
+
+    // SECRETARIA/ADMIN: lista os perfis que podem ser ativados/desativados.
+    listarPerfis: async (req, res) => {
+        try {
+            const papelLogado = (req.usuario.tipo_usuario || '').toUpperCase();
+            const tipos = papelLogado === 'ADMIN'
+                ? ['PAI', 'PORTARIA', 'PORTEIRO', 'SECRETARIA']
+                : ['PAI', 'PORTARIA', 'PORTEIRO'];
+            const perfis = await usuariosModel.listarPerfis(tipos);
+            return res.json(perfis.map(p => ({
+                ...p,
+                ativo: usuariosModel.estaAtivo(p),
+                eu: p.id_usuario === req.usuario.id_usuario
+            })));
+        } catch (error) {
+            console.error('Erro ao listar perfis:', error);
+            return res.status(500).json({ erro: 'Erro ao listar perfis.' });
+        }
+    },
+
+    // SECRETARIA/ADMIN: ativa ou desativa um perfil. Perfil desativado não consegue
+    // entrar (login) e perde o acesso na hora, mesmo com sessão aberta (ver middleware auth).
+    alterarStatus: async (req, res) => {
+        try {
+            const id = Number(req.params.id);
+            const { ativo } = req.body;
+
+            if (!Number.isInteger(id) || typeof ativo !== 'boolean') {
+                return res.status(400).json({ erro: 'Informe o usuário e o campo "ativo" (true/false).' });
+            }
+            if (id === req.usuario.id_usuario) {
+                return res.status(400).json({ erro: 'Você não pode desativar o seu próprio perfil.' });
+            }
+
+            const alvo = await usuariosModel.buscarPorId(id);
+            if (!alvo) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+
+            const papelAlvo = (alvo.tipo_usuario || '').toUpperCase();
+            const papelLogado = (req.usuario.tipo_usuario || '').toUpperCase();
+            const secretariaPodeGerir = ['PAI', 'PORTARIA', 'PORTEIRO'];
+            if (papelLogado !== 'ADMIN' && !secretariaPodeGerir.includes(papelAlvo)) {
+                return res.status(403).json({ erro: 'Você não tem permissão para alterar este tipo de perfil.' });
+            }
+
+            await usuariosModel.atualizarStatus(id, ativo ? '1' : '0');
+            return res.json({
+                mensagem: ativo ? `Perfil de ${alvo.nome} reativado.` : `Perfil de ${alvo.nome} desativado.`,
+                ativo
+            });
+        } catch (error) {
+            console.error('Erro ao alterar status do perfil:', error);
+            return res.status(500).json({ erro: 'Erro ao alterar status do perfil.' });
         }
     },
 
@@ -392,6 +464,13 @@ const usuariosController = {
                 });
             }
 
+            // Conta nova: confere se o e-mail informado existe antes de criar a conta
+            // e mandar a senha temporária para ele.
+            const checagemEmail = await verificarEmail(email);
+            if (!checagemEmail.valido) {
+                return res.status(400).json({ erro: checagemEmail.motivo, sugestao: checagemEmail.sugestao });
+            }
+
             const senhaTemporaria = gerarSenhaAleatoria();
             const senhaHash = await bcrypt.hash(senhaTemporaria, 10);
 
@@ -404,11 +483,8 @@ const usuariosController = {
 
             let emailEnviado = true;
             try {
-                const emailSistema = process.env.EMAIL_USER || "portariainteligente950@gmail.com";
-                const transporter = getTransporter();
-
-                await transporter.sendMail({
-                    from: `"Controle de Saidas" <${emailSistema}>`,
+                await enviarEmail({
+                    fromName: 'Controle de Saidas',
                     to: email,
                     subject: 'Sua conta de acesso foi criada - Controle de Saidas',
                     text: `Olá ${nome}, sua conta foi criada. E-mail: ${email} | Senha temporária: ${senhaTemporaria}`,

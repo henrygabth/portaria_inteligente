@@ -5,16 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Solicitações</title>
-<<<<<<< HEAD
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="./css/home.css?v=4" rel="stylesheet">
+    <link href="./css/home.css?v=6" rel="stylesheet">
     <link href="./css/global.css?v=4" rel="stylesheet">
-=======
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="./css/home.css" rel="stylesheet">
-    <link href="./css/global.css" rel="stylesheet">
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 </head>
 
 <body>
@@ -27,11 +21,7 @@
             <span class="bar"></span>
             <span class="bar"></span>
         </div>
-<<<<<<< HEAD
-       <div class="logo">
-=======
         <div class="logo">
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
             <a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a>
         </div>
         <button id="themeToggle">
@@ -48,23 +38,17 @@
                 <a href="#" onclick="mostrarTela('tela-criar')"><i class="fas fa-plus-circle"></i> Criar Solicitação</a>
             </li>
             <li>
-<<<<<<< HEAD
                 <a href="#" onclick="mostrarTela('tela-recorrentes')"><i class="fas fa-redo"></i> Pedidos Recorrentes</a>
             </li>
             <li>
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                 <a href="#" onclick="mostrarTela('tela-historico')"><i class="fas fa-list-alt"></i> Histórico</a>
             </li>
             <li>
                 <a href="#" onclick="mostrarTela('tela-conta')"><i class="fas fa-user-circle"></i> Minha Conta</a>
             </li>
-<<<<<<< HEAD
             <li id="linkTrocarPainel" style="display: none;">
                 <a href="selecionar-painel.html"><i class="fas fa-arrow-right-arrow-left"></i> Trocar de Painel</a>
             </li>
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
             <li>
                 <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a>
             </li>
@@ -90,7 +74,7 @@
         <section id="tela-criar" style="display: none;">
             <h1>Criar Solicitação de Saída</h1>
             <div class="card">
-                <p style="margin-bottom: 15px;">Preencha os dados abaixo para autorizar a saída do aluno para o almoço.</p>
+                <p class="descricao-tela">Preencha os dados abaixo para autorizar a saída do aluno para o almoço.</p>
 
                 <form id="formSolicitacao" class="form-grid">
                     <div class="input-group full-width">
@@ -98,7 +82,7 @@
                         <select id="alunoId" required>
                             <option value="" disabled selected>Carregando alunos vinculados...</option>
                         </select>
-                        <small style="color: #666;">Não encontrou o aluno na lista? Procure a secretaria para vincular a conta.</small>
+                        <small class="campo-ajuda">Não encontrou o aluno na lista? Procure a secretaria para vincular a conta.</small>
                     </div>
 
                     <div class="input-group">
@@ -111,15 +95,12 @@
                         <input type="time" id="horaSaida" required>
                     </div>
 
-<<<<<<< HEAD
                     <div class="input-group">
                         <label for="horaRetorno">Horário previsto de retorno (opcional)</label>
                         <input type="time" id="horaRetorno">
-                        <small style="color: #666;">Se preenchido, a escola recebe um alerta automático caso o aluno não retorne até 5 minutos após esse horário.</small>
+                        <small class="campo-ajuda">Se preenchido, a escola recebe um alerta automático caso o aluno não retorne até 5 minutos após esse horário.</small>
                     </div>
 
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                     <div class="form-actions full-width" style="margin-top: 15px;">
                         <button type="submit" class="btn-submit">
                             <i class="fas fa-paper-plane"></i> Enviar Solicitação
@@ -129,11 +110,10 @@
             </div>
         </section>
 
-<<<<<<< HEAD
         <section id="tela-recorrentes" style="display: none;">
             <h1>Pedidos Recorrentes</h1>
             <div class="card">
-                <p style="margin-bottom: 15px;">Cadastre um horário fixo (ex: toda sexta, saída 12h) e o sistema cria a solicitação sozinho nesse dia — só falta a secretaria aprovar.</p>
+                <p class="descricao-tela">Cadastre um horário fixo (ex: de segunda a sexta, saída às 12h) e o sistema cria a solicitação sozinho em cada um desses dias — só falta a secretaria aprovar.</p>
 
                 <form id="formRecorrente" class="form-grid">
                     <div class="input-group full-width">
@@ -141,67 +121,72 @@
                         <select id="alunoIdRecorrente" required>
                             <option value="" disabled selected>Carregando alunos vinculados...</option>
                         </select>
+                        <small class="campo-ajuda">Não encontrou o aluno na lista? Procure a secretaria para vincular a conta.</small>
+                    </div>
+
+                    <div class="input-group full-width">
+                        <label>Dias da semana</label>
+                        <div class="dias-semana" id="diasSemanaRecorrente">
+                            <label><input type="checkbox" name="diaSemana" value="1"><span>Seg</span></label>
+                            <label><input type="checkbox" name="diaSemana" value="2"><span>Ter</span></label>
+                            <label><input type="checkbox" name="diaSemana" value="3"><span>Qua</span></label>
+                            <label><input type="checkbox" name="diaSemana" value="4"><span>Qui</span></label>
+                            <label><input type="checkbox" name="diaSemana" value="5"><span>Sex</span></label>
+                            <label><input type="checkbox" name="diaSemana" value="6"><span>Sáb</span></label>
+                            <label><input type="checkbox" name="diaSemana" value="0"><span>Dom</span></label>
+                        </div>
+                        <div class="atalhos-dias">
+                            <button type="button" id="atalhoSegSex">Segunda a sexta</button>
+                            <button type="button" id="atalhoLimparDias">Limpar</button>
+                        </div>
                     </div>
 
                     <div class="input-group">
-                        <label for="diaSemanaRecorrente">Dia da semana</label>
-                        <select id="diaSemanaRecorrente" required>
-                            <option value="1">Segunda-feira</option>
-                            <option value="2">Terça-feira</option>
-                            <option value="3">Quarta-feira</option>
-                            <option value="4">Quinta-feira</option>
-                            <option value="5">Sexta-feira</option>
-                            <option value="6">Sábado</option>
-                            <option value="0">Domingo</option>
-                        </select>
-                    </div>
-
-                    <div class="input-group">
-                        <label for="horaSaidaRecorrente">Horário de saída</label>
+                        <label for="horaSaidaRecorrente">Horário da Saída</label>
                         <input type="time" id="horaSaidaRecorrente" required>
                     </div>
 
                     <div class="input-group">
                         <label for="horaRetornoRecorrente">Horário previsto de retorno (opcional)</label>
                         <input type="time" id="horaRetornoRecorrente">
+                        <small class="campo-ajuda">Se preenchido, a escola recebe um alerta automático caso o aluno não retorne até 5 minutos após esse horário.</small>
                     </div>
 
-                    <div class="input-group full-width">
-                        <label for="motivoRecorrente">Motivo (opcional)</label>
-                        <input type="text" id="motivoRecorrente" placeholder="Ex: Saída para Almoço">
-                    </div>
-
-                    <div class="form-actions full-width" style="margin-top: 10px;">
+                    <div class="form-actions full-width" style="margin-top: 15px;">
                         <button type="submit" class="btn-submit">
                             <i class="fas fa-redo"></i> Criar Pedido Recorrente
                         </button>
                     </div>
                 </form>
+            </div>
 
-                <table class="history-table" style="margin-top: 20px;">
-                    <thead>
-                        <tr>
-                            <th>Aluno</th>
-                            <th>Dia</th>
-                            <th>Saída</th>
-                            <th>Retorno</th>
-                            <th>Status</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaRecorrentesBody">
-                        <tr><td colspan="6">Carregando...</td></tr>
-                    </tbody>
-                </table>
+            <div class="card">
+                <h2 class="titulo-card">Meus horários fixos</h2>
+                <p class="descricao-tela" style="margin-bottom: 0;">Pause ou remova um horário quando não precisar mais dele.</p>
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Aluno</th>
+                                <th>Dia</th>
+                                <th>Saída</th>
+                                <th>Retorno</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaRecorrentesBody">
+                            <tr><td colspan="6">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
         <section id="tela-historico" style="display: none;">
             <h1>Histórico de Solicitações</h1>
             <div class="card">
-                <p>Acompanhe o status das solicitações enviadas.</p>
+                <p class="descricao-tela">Acompanhe o status das solicitações enviadas. Você também recebe um e-mail quando o aluno sai, quando volta e se ele atrasar ou não voltar.</p>
                 <div class="table-responsive">
                     <table class="history-table">
                         <thead>
@@ -271,10 +256,7 @@
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-<<<<<<< HEAD
-    <script src="./js/general/home.js?v=2"></script>
-=======
-    <script src="./js/general/home.js"></script>
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
+    <script src="./js/general/sessao.js?v=1"></script>
+    <script src="./js/general/home.js?v=3"></script>
 </body>
 </html>

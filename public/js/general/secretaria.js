@@ -6,11 +6,7 @@ let pedidoSelecionado = null;
 // 1. GERENCIAMENTO DE TELAS E FORMULÁRIOS
 // ==========================================
 function mostrarTela(idTela) {
-<<<<<<< HEAD
-    const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-historico'];
-=======
-    const telas = ['tela-inicio', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-historico'];
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
+    const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-perfis', 'tela-historico'];
     telas.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -26,18 +22,16 @@ function mostrarTela(idTela) {
         if (menuToggle) menuToggle.classList.remove('active');
     }
 
-<<<<<<< HEAD
     if (idTela === 'tela-painel') {
         carregarPainelEstatisticas();
     } else if (idTela === 'tela-solicitacoes') {
-=======
-    if (idTela === 'tela-solicitacoes') {
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
         carregarPendentes();
     } else if (idTela === 'tela-vincular') {
         carregarTurmasVinculo();
     } else if (idTela === 'tela-alunos') {
         carregarGerenciarAlunos();
+    } else if (idTela === 'tela-perfis') {
+        carregarPerfis();
     } else if (idTela === 'tela-historico') {
         carregarHistoricoSecretaria();
     }
@@ -46,6 +40,13 @@ function mostrarTela(idTela) {
 async function salvarVinculo(event) {
     event.preventDefault();
     const token = localStorage.getItem('token');
+
+    // Garante que o e-mail foi conferido (mesmo que a pessoa não tenha saído do campo).
+    const emailConferido = await verificarEmailVinculo();
+    if (emailConferido === false) {
+        document.getElementById('emailNovoResponsavel').focus();
+        return;
+    }
 
     const corpo = {
         nome: document.getElementById('nomeResponsavelVinculo').value.trim(),
@@ -83,6 +84,92 @@ async function salvarVinculo(event) {
         alert('Erro de conexão com o servidor');
     }
 }
+
+
+// ==========================================
+// 1b. VERIFICADOR DE E-MAIL (Vincular Responsável)
+// ==========================================
+let ultimoEmailVerificado = { email: null, valido: null };
+
+function mostrarMsgEmail(tipo, html) {
+    const el = document.getElementById('emailVerificacaoMsg');
+    if (!el) return;
+    el.className = 'email-verificacao ' + tipo;
+    el.innerHTML = html;
+}
+
+// Retorna true (e-mail ok), false (e-mail recusado) ou null (campo vazio).
+async function verificarEmailVinculo() {
+    const campo = document.getElementById('emailNovoResponsavel');
+    if (!campo) return null;
+    const email = campo.value.trim();
+
+    if (!email) {
+        mostrarMsgEmail('', '');
+        return null;
+    }
+    if (ultimoEmailVerificado.email === email && ultimoEmailVerificado.valido !== null) {
+        return ultimoEmailVerificado.valido;
+    }
+
+    mostrarMsgEmail('checando', '<i class="fas fa-spinner fa-spin"></i> Verificando e-mail...');
+
+    try {
+        const resp = await fetch(`${API_URL}/usuarios/verificar-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ email })
+        });
+        const r = await resp.json();
+        if (!resp.ok) throw new Error(r.erro || 'Falha na verificação');
+
+        // Ignora a resposta se a pessoa já alterou o campo enquanto verificava.
+        if (campo.value.trim() !== email) return null;
+
+        if (!r.valido) {
+            let html = `<i class="fas fa-circle-xmark"></i> ${esc(r.motivo)}`;
+            if (r.sugestao) {
+                html += ` <button type="button" id="usarSugestaoEmail">Usar ${esc(r.sugestao)}</button>`;
+            }
+            mostrarMsgEmail('erro', html);
+            const btn = document.getElementById('usarSugestaoEmail');
+            if (btn) btn.addEventListener('click', () => {
+                campo.value = r.sugestao;
+                ultimoEmailVerificado = { email: null, valido: null };
+                verificarEmailVinculo();
+            });
+            ultimoEmailVerificado = { email, valido: false };
+            return false;
+        }
+
+        if (r.jaCadastrado) {
+            mostrarMsgEmail('aviso', '<i class="fas fa-circle-info"></i> Este e-mail já tem conta: o aluno será vinculado a ela.');
+        } else if (r.verificado) {
+            mostrarMsgEmail('ok', '<i class="fas fa-circle-check"></i> E-mail válido.');
+        } else {
+            mostrarMsgEmail('aviso', '<i class="fas fa-triangle-exclamation"></i> Formato válido, mas não foi possível confirmar o domínio agora.');
+        }
+        ultimoEmailVerificado = { email, valido: true };
+        return true;
+    } catch (err) {
+        // Falha de rede/servidor na verificação não impede o cadastro; o servidor valida de novo.
+        mostrarMsgEmail('aviso', '<i class="fas fa-triangle-exclamation"></i> Não foi possível verificar o e-mail agora.');
+        return null;
+    }
+}
+
+(function iniciarVerificadorEmail() {
+    const campo = document.getElementById('emailNovoResponsavel');
+    if (!campo) return;
+    campo.addEventListener('blur', verificarEmailVinculo);
+    campo.addEventListener('input', () => {
+        ultimoEmailVerificado = { email: null, valido: null };
+        mostrarMsgEmail('', '');
+    });
+})();
 
 async function carregarTurmasVinculo() {
     const token = localStorage.getItem('token');
@@ -124,11 +211,7 @@ function iniciarParticulas(theme) {
         particlesJS("particles-js", {
             "particles": {
                 "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
-<<<<<<< HEAD
                 "color": { "value": "#0052cc" },
-=======
-            "color": { "value": "#0052cc" },
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
                 "shape": { "type": "circle" },
                 "opacity": { "value": 0.5 },
                 "size": { "value": 3, "random": true },
@@ -170,6 +253,23 @@ function aplicarTema(theme) {
 // 3. REQUISIÇÕES DA SECRETARIA (API)
 // ==========================================
 
+function esc(valor) {
+    return String(valor ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function mesmoDia(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+// Só a hora quando é hoje; dia/mês + hora quando é outro dia.
+function formatarHorario(valor) {
+    if (!valor) return '-';
+    const d = new Date(valor);
+    const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (mesmoDia(d, new Date())) return hora;
+    return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} ${hora}`;
+}
+
 // Carregar solicitações pendentes
 async function carregarPendentes() {
     const token = localStorage.getItem('token');
@@ -187,20 +287,23 @@ async function carregarPendentes() {
         tbody.innerHTML = '';
 
         if (dados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">Nenhuma solicitação pendente.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8">Nenhuma solicitação pendente.</td></tr>';
         } else {
             dados.forEach(pedido => {
                 const tr = document.createElement('tr');
-                const dataHora = pedido.data_criacao 
-                    ? new Date(pedido.data_criacao).toLocaleString('pt-BR') 
+                const dataHora = pedido.data_criacao
+                    ? new Date(pedido.data_criacao).toLocaleString('pt-BR')
                     : '-';
+                const etiqueta = pedido.recorrente_id ? '<span class="etiqueta-aluno">Horário fixo</span>' : '';
 
                 tr.innerHTML = `
                     <td>${dataHora}</td>
-                    <td>${pedido.nome_aluno || 'Aluno'}</td>
-                    <td>${pedido.turma || '-'}</td>
-                    <td>${pedido.motivo || '-'}</td>
-                    <td>${pedido.observacoes || '-'}</td>
+                    <td>${esc(pedido.nome_aluno || 'Aluno')}${etiqueta}</td>
+                    <td>${esc(pedido.turma || '-')}</td>
+                    <td>${formatarHorario(pedido.hora_prevista_saida)}</td>
+                    <td>${formatarHorario(pedido.hora_prevista_retorno)}</td>
+                    <td>${esc(pedido.responsavel || '-')}</td>
+                    <td>${esc(pedido.motivo || '-')}</td>
                     <td>
                         <button class="btn-action btn-accept" onclick="decidir(${pedido.pedidos_saida_id}, 'aceitar')">
                             <i class="fas fa-check"></i>
@@ -218,7 +321,7 @@ async function carregarPendentes() {
         if (elemCount) elemCount.textContent = dados.length;
     } catch (err) {
         console.error('Erro ao carregar pendentes:', err);
-        tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar pendentes.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="color:red;">Erro ao carregar pendentes.</td></tr>';
     }
 }
 
@@ -279,48 +382,91 @@ function confirmarNegativa() {
     fecharModal();
 }
 
-// Carregar histórico de aprovações da secretaria
+// Histórico geral da secretaria: tudo que já saiu da fila de pendentes
+// (antes só aparecia "Aprovada" e o pedido sumia quando a portaria liberava o aluno).
+const ROTULO_STATUS_SECRETARIA = {
+    APROVADA: 'Aprovada - aguardando portaria',
+    RECUSADA: 'Recusada',
+    EM_SAIDA: 'Aluno fora da escola',
+    CONCLUIDA: 'Concluída',
+    CANCELADA: 'Cancelada pela portaria'
+};
+
+let historicoSecretariaCache = [];
+
+function dentroDoPeriodo(valor, periodo) {
+    if (periodo === 'todos' || !valor) return true;
+    const d = new Date(valor);
+    const agora = new Date();
+    if (periodo === 'semana') {
+        const inicio = new Date(agora);
+        inicio.setHours(0, 0, 0, 0);
+        inicio.setDate(inicio.getDate() - 6);
+        return d >= inicio;
+    }
+    if (periodo === 'mes') return d.getFullYear() === agora.getFullYear() && d.getMonth() === agora.getMonth();
+    if (periodo === 'ano') return d.getFullYear() === agora.getFullYear();
+    return true;
+}
+
+function renderizarHistoricoSecretaria() {
+    const tbody = document.getElementById('tabelaHistoricoSecretariaBody');
+    if (!tbody) return;
+
+    const periodo = document.getElementById('filtroTempo')?.value || 'todos';
+    const dados = historicoSecretariaCache.filter(p => dentroDoPeriodo(p.data_criacao, periodo));
+
+    tbody.innerHTML = '';
+
+    if (dados.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Nenhum registro encontrado.</td></tr>';
+        return;
+    }
+
+    dados.forEach(pedido => {
+        const tr = document.createElement('tr');
+        const dataHora = pedido.data_criacao ? new Date(pedido.data_criacao).toLocaleString('pt-BR') : '-';
+        const classe = `status-${String(pedido.status).toLowerCase()}`;
+        const etiqueta = pedido.recorrente_id ? '<span class="etiqueta-aluno">Horário fixo</span>' : '';
+
+        tr.innerHTML = `
+            <td>${dataHora}</td>
+            <td>${esc(pedido.nome_aluno || 'Aluno')}${etiqueta}</td>
+            <td>${esc(pedido.turma || '-')}</td>
+            <td>${formatarHorario(pedido.hora_prevista_saida)}</td>
+            <td><span class="status ${classe}">${ROTULO_STATUS_SECRETARIA[pedido.status] || esc(pedido.status)}</span></td>
+            <td>${esc(pedido.secretario || pedido.aprovador || '-')}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 async function carregarHistoricoSecretaria() {
     const token = localStorage.getItem('token');
     const tbody = document.getElementById('tabelaHistoricoSecretariaBody');
     if (!tbody) return;
 
     try {
-        const resp = await fetch(`${API_URL}/pedidos/listarPorStatus?status=APROVADA`, {
+        const resp = await fetch(`${API_URL}/pedidos/historico-geral`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!resp.ok) throw new Error('Falha ao carregar histórico');
 
-        const dados = await resp.json();
-        tbody.innerHTML = '';
+        historicoSecretariaCache = await resp.json();
+        renderizarHistoricoSecretaria();
 
-        if (dados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">Nenhum registro encontrado.</td></tr>';
-            return;
-        }
-
-        dados.forEach(pedido => {
-            const tr = document.createElement('tr');
-            const dataHora = pedido.data_criacao 
-                ? new Date(pedido.data_criacao).toLocaleString('pt-BR') 
-                : '-';
-
-            tr.innerHTML = `
-                <td>${dataHora}</td>
-                <td>${pedido.nome_aluno || 'Aluno'}</td>
-                <td>${pedido.turma || '-'}</td>
-                <td><span class="status status-aprovado">Aprovado</span></td>
-                <td>${pedido.aprovador || '-'}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-
+        // "Aprovadas hoje": pedidos de hoje que a secretaria aprovou e que seguiram adiante
+        const hoje = new Date();
+        const aprovadasHoje = historicoSecretariaCache.filter(p =>
+            ['APROVADA', 'EM_SAIDA', 'CONCLUIDA'].includes(p.status) &&
+            p.hora_prevista_saida && mesmoDia(new Date(p.hora_prevista_saida), hoje)
+        ).length;
         const elemCountHoje = document.getElementById('count-hoje');
-        if (elemCountHoje) elemCountHoje.textContent = dados.length;
+        if (elemCountHoje) elemCountHoje.textContent = aprovadasHoje;
     } catch (err) {
         console.error('Erro ao carregar histórico:', err);
-        tbody.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao carregar histórico.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar histórico.</td></tr>';
     }
 }
 
@@ -470,7 +616,109 @@ async function salvarAlteracaoAluno(aluno_id) {
 }
 
 // ==========================================
-<<<<<<< HEAD
+// 3a. GERENCIAR PERFIS (ativar / desativar acesso)
+// ==========================================
+let perfisCache = [];
+const ROTULO_TIPO_PERFIL = { PAI: 'Responsável', PORTARIA: 'Portaria', PORTEIRO: 'Portaria', SECRETARIA: 'Secretaria', ADMIN: 'Admin' };
+
+async function carregarPerfis() {
+    const token = localStorage.getItem('token');
+    const tbody = document.getElementById('tabelaPerfisBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="6">Carregando perfis...</td></tr>';
+    try {
+        const resp = await fetch(`${API_URL}/usuarios/perfis`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (!resp.ok) throw new Error('Falha ao buscar perfis');
+        perfisCache = await resp.json();
+        aplicarFiltrosPerfis();
+    } catch (err) {
+        console.error('Erro ao carregar perfis:', err);
+        tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar perfis.</td></tr>';
+    }
+}
+
+function aplicarFiltrosPerfis() {
+    const busca = (document.getElementById('filtroPerfilBusca')?.value || '').trim().toLowerCase();
+    const tipo = document.getElementById('filtroPerfilTipo')?.value || '';
+    const status = document.getElementById('filtroPerfilStatus')?.value || '';
+
+    const filtrados = perfisCache.filter(p => {
+        const tipoNorm = p.tipo_usuario === 'PORTEIRO' ? 'PORTARIA' : p.tipo_usuario;
+        const bateBusca = !busca
+            || (p.nome || '').toLowerCase().includes(busca)
+            || (p.email || '').toLowerCase().includes(busca)
+            || (p.alunos || '').toLowerCase().includes(busca);
+        const bateTipo = !tipo || tipoNorm === tipo;
+        const bateStatus = !status || (status === 'ativo' ? p.ativo : !p.ativo);
+        return bateBusca && bateTipo && bateStatus;
+    });
+    renderizarPerfis(filtrados);
+}
+
+function renderizarPerfis(perfis) {
+    const tbody = document.getElementById('tabelaPerfisBody');
+    if (!tbody) return;
+
+    if (perfis.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Nenhum perfil encontrado para os filtros selecionados.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = perfis.map(p => `
+        <tr class="${p.ativo ? '' : 'perfil-desativado'}">
+            <td>${esc(p.nome)}${p.eu ? ' <small>(você)</small>' : ''}</td>
+            <td>${esc(p.email)}</td>
+            <td>${ROTULO_TIPO_PERFIL[p.tipo_usuario] || esc(p.tipo_usuario)}</td>
+            <td>${esc(p.alunos || '-')}</td>
+            <td><span class="status ${p.ativo ? 'status-ativo' : 'status-desativado'}">${p.ativo ? 'Ativo' : 'Desativado'}</span></td>
+            <td>
+                <button type="button" class="btn-perfil ${p.ativo ? 'desativar' : 'reativar'}"
+                        data-id="${p.id_usuario}" data-ativo="${p.ativo ? '0' : '1'}" ${p.eu ? 'disabled title="Você não pode desativar o próprio perfil"' : ''}>
+                    ${p.ativo ? '<i class="fas fa-user-slash"></i> Desativar' : '<i class="fas fa-user-check"></i> Reativar'}
+                </button>
+            </td>
+        </tr>`).join('');
+
+    tbody.querySelectorAll('.btn-perfil').forEach(btn => {
+        btn.addEventListener('click', () => alterarStatusPerfil(Number(btn.dataset.id), btn.dataset.ativo === '1'));
+    });
+}
+
+async function alterarStatusPerfil(id, ativar) {
+    const perfil = perfisCache.find(p => p.id_usuario === id);
+    if (!perfil) return;
+
+    const pergunta = ativar
+        ? `Reativar o perfil de ${perfil.nome}? Ele voltará a poder entrar no sistema.`
+        : `Desativar o perfil de ${perfil.nome}? Ele perderá o acesso ao sistema imediatamente.`;
+    if (!confirm(pergunta)) return;
+
+    try {
+        const resp = await fetch(`${API_URL}/usuarios/${id}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+            body: JSON.stringify({ ativo: ativar })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            alert('Erro: ' + (data.erro || 'Falha ao alterar o perfil'));
+            return;
+        }
+        perfil.ativo = ativar;
+        perfil.status = ativar ? '1' : '0';
+        aplicarFiltrosPerfis();
+    } catch (err) {
+        alert('Erro de conexão com o servidor');
+    }
+}
+
+['filtroPerfilTipo', 'filtroPerfilStatus'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', aplicarFiltrosPerfis);
+});
+document.getElementById('filtroPerfilBusca')?.addEventListener('input', aplicarFiltrosPerfis);
+
+// ==========================================
 // 3b. PAINEL DE ESTATÍSTICAS (dashboard)
 // ==========================================
 let ultimoPainelCarregado = null;
@@ -707,8 +955,6 @@ document.getElementById('btnGerarRelatorio')?.addEventListener('click', async ()
 });
 
 // ==========================================
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 // 4. AUTENTICAÇÃO E INICIALIZAÇÃO
 // ==========================================
 function logout() {
@@ -723,15 +969,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-<<<<<<< HEAD
     const usuarioLogado = JSON.parse(localStorage.getItem('usuario') || '{}');
     if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
         const linkTrocarPainel = document.getElementById('linkTrocarPainel');
         if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
     }
 
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
@@ -757,6 +1000,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     aplicarTema(savedTheme);
 
+    document.getElementById('filtroTempo')?.addEventListener('change', renderizarHistoricoSecretaria);
+
     carregarPendentes();
     carregarHistoricoSecretaria();
+
+    // Atualização automática: solicitações novas dos pais aparecem sozinhas, sem recarregar a página.
+    setInterval(() => {
+        if (document.hidden) return;
+        carregarPendentes();
+        carregarHistoricoSecretaria();
+    }, 15000);
 });

@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-<<<<<<< HEAD
 
 // Sem valor padrão embutido: se JWT_SECRET não estiver no .env, o servidor
 // falha ao iniciar em vez de assinar/validar tokens com uma senha fixa que
@@ -9,11 +8,8 @@ const SEGREDO = process.env.JWT_SECRET;
 if (!SEGREDO) {
     throw new Error('Configuração incompleta: defina JWT_SECRET no .env antes de iniciar o servidor.');
 }
-=======
-const SEGREDO = process.env.JWT_SECRET || 'chave_secreta_escola';
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
     const tokenHeader = req.headers['authorization'];
     
     if (!tokenHeader) {
@@ -28,11 +24,27 @@ const auth = (req, res, next) => {
         const decoded = jwt.verify(token, SEGREDO);
 
         req.usuario = decoded; // Armazena os dados do usuário logado na requisição
-
-        next();
     } catch (error) {
         return res.status(401).json({ erro: 'Token inválido ou expirado.' });
     }
+
+    // Perfil desativado pela secretaria perde o acesso na hora, mesmo que o token
+    // (válido por 8h) ainda não tenha expirado.
+    try {
+        const usuariosModel = require('../model/usuariosModel');
+        const registro = await usuariosModel.buscarStatusPorId(req.usuario.id_usuario);
+        if (!registro) {
+            return res.status(401).json({ erro: 'Usuário não encontrado. Faça login novamente.' });
+        }
+        if (!usuariosModel.estaAtivo(registro)) {
+            return res.status(403).json({ erro: 'Este perfil está desativado. Procure a secretaria da escola.', perfilDesativado: true });
+        }
+    } catch (error) {
+        console.error('Erro ao conferir status do usuário:', error);
+        return res.status(500).json({ erro: 'Erro ao validar o acesso do usuário.' });
+    }
+
+    next();
 };
 
  

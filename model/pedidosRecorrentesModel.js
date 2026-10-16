@@ -30,7 +30,7 @@ const pedidosRecorrentesModel = {
     listarAtivosPorDia: async (dia_semana) => {
         const sql = `
             SELECT r.recorrente_id, r.aluno_id, r.usuario_id, r.hora_saida, r.hora_retorno, r.motivo,
-                   a.nome AS nome_aluno, a.turma_id
+                   r.data_criacao, a.nome AS nome_aluno, a.turma_id
             FROM pedidos_recorrentes r
             JOIN alunos a ON r.aluno_id = a.aluno_id
             WHERE r.ativo = 1 AND r.dia_semana = ? AND (a.status IS NULL OR UPPER(a.status) = 'ATIVO')
@@ -56,11 +56,22 @@ const pedidosRecorrentesModel = {
     },
 
     // Evita gerar duas vezes o pedido do mesmo molde no mesmo dia (ex: se o
-    // servidor reiniciar várias vezes durante o dia).
+    // servidor reiniciar várias vezes durante o dia). Compara pelo DIA DA SAÍDA
+    // prevista (e não pela data de criação), que não depende do fuso do banco.
     existePedidoHoje: async (recorrente_id, dataStr) => {
         const [rows] = await db.query(
-            `SELECT 1 FROM pedidos_saida WHERE recorrente_id = ? AND DATE(data_criacao) = ? LIMIT 1`,
+            `SELECT 1 FROM pedidos_saida WHERE recorrente_id = ? AND DATE(hora_prevista_saida) = ? LIMIT 1`,
             [recorrente_id, dataStr]
+        );
+        return rows.length > 0;
+    },
+
+    // Impede cadastrar duas vezes o mesmo horário para o mesmo aluno no mesmo dia da semana.
+    existeIgual: async (aluno_id, usuario_id, dia_semana, hora_saida) => {
+        const [rows] = await db.query(
+            `SELECT 1 FROM pedidos_recorrentes
+             WHERE aluno_id = ? AND usuario_id = ? AND dia_semana = ? AND hora_saida = ? LIMIT 1`,
+            [aluno_id, usuario_id, dia_semana, hora_saida]
         );
         return rows.length > 0;
     }

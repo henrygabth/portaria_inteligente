@@ -4,6 +4,24 @@ const alunosModel = require('../model/alunosModel');
 const responsaveisAlunosModel = require('../model/responsaveisAlunosModel');
 const { enviarEmail } = require('../utils/email');
 const { montarEmailHtml } = require('../utils/emailTemplate');
+const { notificarResponsaveis } = require('../utils/emailsPais');
+
+// Garante que o pedido está no status esperado antes de seguir para a próxima etapa
+// (Pai -> Secretaria -> Portaria). Sem isso, a portaria conseguia liberar um pedido
+// que a secretaria ainda não aprovou, ou liberar duas vezes o mesmo aluno.
+// Retorna true se pode seguir; senão já responde ao cliente e retorna false.
+async function exigirStatus(res, pedido_id, esperado, mensagemErro) {
+    const atual = await pedidos.obterStatus(pedido_id);
+    if (!atual) {
+        res.status(404).json({ erro: "Pedido não encontrado" });
+        return false;
+    }
+    if (atual !== esperado) {
+        res.status(409).json({ erro: mensagemErro });
+        return false;
+    }
+    return true;
+}
 
 // Monta o e-mail de aviso ao responsável quando um pedido é recusado ou cancelado
 function montarEmailNegativa({ nomeAluno, nomeResponsavel, motivo, quem }) {
@@ -28,12 +46,12 @@ const pedidosController = {
     // pedidos para os próprios filhos, e nome/turma vêm sempre corretos do banco.
     cadastrar: async (req, res) => {
         try {
-<<<<<<< HEAD
             const { aluno_id, hora_prevista_saida, hora_prevista_retorno, motivo, observacoes } = req.body;
-=======
-            const { aluno_id, hora_prevista_saida, motivo, observacoes } = req.body;
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
-            const solicitante_id = req.body.solicitante_id || req.usuario.id_usuario;
+            // O solicitante é sempre quem está logado: um responsável não pode criar pedido
+            // em nome de outro. Só Secretaria/Admin podem informar outro solicitante.
+            const papel = (req.usuario.tipo_usuario || '').toUpperCase();
+            const podeEscolher = papel === 'SECRETARIA' || papel === 'ADMIN';
+            const solicitante_id = (podeEscolher && req.body.solicitante_id) || req.usuario.id_usuario;
 
             if (!aluno_id || !hora_prevista_saida) {
                 return res.status(400).json({ erro: "Campos obrigatórios não preenchidos" });
@@ -50,12 +68,8 @@ const pedidosController = {
             }
 
             const pedido_id = await pedidos.cadastrar(
-<<<<<<< HEAD
                 aluno_id, aluno.nome, aluno.turma_id, solicitante_id, hora_prevista_saida, motivo || null, observacoes || null,
                 hora_prevista_retorno || null
-=======
-                aluno_id, aluno.nome, aluno.turma_id, solicitante_id, hora_prevista_saida, motivo || null, observacoes || null
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
             );
             res.status(201).json({ mensagem: `Pedido ${pedido_id} criado com sucesso e enviado à secretaria`, id_pedido: pedido_id });
         } catch (error) {
@@ -69,6 +83,7 @@ const pedidosController = {
         try {
             const pedido_id = req.params.id;
             const usuario_id = req.usuario.id_usuario;
+            if (!(await exigirStatus(res, pedido_id, 'PENDENTE', "Este pedido já foi analisado. Atualize a lista de solicitações."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'APROVADA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
             res.json({ mensagem: "Pedido aprovado com sucesso e enviado para a portaria" });
@@ -89,6 +104,7 @@ const pedidosController = {
                 return res.status(400).json({ erro: "Informe o motivo da recusa." });
             }
 
+            if (!(await exigirStatus(res, pedido_id, 'PENDENTE', "Este pedido já foi analisado. Atualize a lista de solicitações."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'RECUSADA', usuario_id, observacao);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
 
@@ -125,9 +141,14 @@ const pedidosController = {
         try {
             const pedido_id = req.params.id;
             const usuario_id = req.usuario.id_usuario;
+            if (!(await exigirStatus(res, pedido_id, 'APROVADA', "Só é possível liberar pedidos aprovados pela secretaria que ainda não saíram."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'EM_SAIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
-            res.json({ mensagem: "Aluno liberado na portaria com horário registrado" });
+
+            // Avisa os responsáveis sem segurar a resposta da portaria
+            notificarResponsaveis(pedido_id, 'SAIDA');
+
+            res.json({ mensagem: "Aluno liberado na portaria com horário registrado. Os responsáveis serão avisados por e-mail." });
         } catch (error) {
             console.error('Erro ao liberar pedido:', error);
             res.status(500).json({ erro: "Erro ao liberar pedido" });
@@ -139,9 +160,14 @@ const pedidosController = {
         try {
             const pedido_id = req.params.id;
             const usuario_id = req.usuario.id_usuario;
+            if (!(await exigirStatus(res, pedido_id, 'EM_SAIDA', "Só é possível registrar o retorno de alunos que estão fora da escola."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'CONCLUIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
-            res.json({ mensagem: "Retorno do aluno registrado com sucesso! Processo concluído." });
+
+            // Avisa os responsáveis (no horário ou com atraso) sem segurar a resposta
+            notificarResponsaveis(pedido_id, 'RETORNO');
+
+            res.json({ mensagem: "Retorno do aluno registrado com sucesso! Os responsáveis serão avisados por e-mail." });
         } catch (error) {
             console.error('Erro ao registrar retorno do aluno:', error);
             res.status(500).json({ erro: "Erro ao registrar retorno do aluno" });
@@ -211,12 +237,28 @@ const pedidosController = {
         }
     },
 
+    // 6b. SECRETARIA: histórico geral (tudo que já foi decidido ou seguiu para a portaria)
+    historicoGeral: async (req, res) => {
+        try {
+            const resultado = await pedidos.buscarHistoricoGeral(req.query.limite);
+            res.json(resultado);
+        } catch (error) {
+            console.error('Erro ao buscar histórico geral:', error);
+            res.status(500).json({ erro: "Erro ao buscar histórico geral" });
+        }
+    },
+
     // 7. HISTÓRICO: Buscar pedidos feitos por um solicitante (Pai)
     buscarPorSolicitante: async (req, res) => {
         try {
             const { id } = req.params;
             if (!id) {
                 return res.status(400).json({ erro: "Solicitante não informado" });
+            }
+            const papel = (req.usuario.tipo_usuario || '').toUpperCase();
+            const equipe = ['SECRETARIA', 'PORTEIRO', 'PORTARIA', 'ADMIN'].includes(papel);
+            if (!equipe && String(id) !== String(req.usuario.id_usuario)) {
+                return res.status(403).json({ erro: "Você só pode ver as suas próprias solicitações." });
             }
             const resultado = await pedidos.buscarPorSolicitante(id);
             res.json(resultado);
@@ -236,7 +278,6 @@ const pedidosController = {
             console.error('Erro ao buscar histórico do pedido:', error);
             res.status(500).json({ erro: "Erro ao buscar histórico do pedido" });
         }
-<<<<<<< HEAD
     },
 
     // 9. SECRETARIA/PORTARIA: lista pedidos atualmente atrasados (aluno em
@@ -261,8 +302,6 @@ const pedidosController = {
             console.error('Erro ao gerar estatísticas:', error);
             res.status(500).json({ erro: "Erro ao gerar estatísticas" });
         }
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     }
 };
 

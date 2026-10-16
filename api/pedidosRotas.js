@@ -15,21 +15,22 @@ rotas.put('/liberar/:id', auth, exigirPapel('PORTEIRO', 'PORTARIA', 'ADMIN'), pe
 rotas.put('/retorno/:id', auth, exigirPapel('PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.retorno);
 rotas.put('/cancelar/:id', auth, exigirPapel('PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.cancelarPortaria);
 
-rotas.get('/listarPorStatus', auth, pedidosController.listarPorStatus);
+// Listas gerais de pedidos: só a equipe da escola (responsáveis usam /solicitante/:id).
+rotas.get('/listarPorStatus', auth, exigirPapel('SECRETARIA', 'PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.listarPorStatus);
+
+// Histórico geral da secretaria (tudo que já saiu da fila de pendentes)
+rotas.get('/historico-geral', auth, exigirPapel('SECRETARIA', 'ADMIN'), pedidosController.historicoGeral);
 
 // Histórico do responsável (Pai)
 rotas.get('/solicitante/:id', auth, pedidosController.buscarPorSolicitante);
 
 // Auditoria: linha do tempo completa de um pedido específico
-rotas.get('/historico/:id', auth, pedidosController.buscarHistorico);
+rotas.get('/historico/:id', auth, exigirPapel('SECRETARIA', 'PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.buscarHistorico);
 
-<<<<<<< HEAD
 // Alerta de atraso: pedidos com aluno em saída além do horário previsto de retorno
 rotas.get('/atrasados', auth, exigirPapel('SECRETARIA', 'PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.listarAtrasados);
 
 // Painel de estatísticas (dashboard) da secretaria
 rotas.get('/estatisticas', auth, exigirPapel('SECRETARIA', 'ADMIN'), pedidosController.estatisticas);
 
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 module.exports = rotas;

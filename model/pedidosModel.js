@@ -4,7 +4,6 @@ const historico = require('./historicoModel');
 
 // Cadastrar novo pedido (Pai cria -> PENDENTE)
 // Também grava o primeiro registro no histórico (status_anterior = null)
-<<<<<<< HEAD
 // hora_prevista_retorno e recorrente_id são opcionais: o primeiro alimenta o
 // alerta de atraso, o segundo só é preenchido quando o pedido foi gerado
 // automaticamente a partir de um molde recorrente.
@@ -13,22 +12,11 @@ async function cadastrar(aluno_id, nome_aluno, turma_id, solicitante_id, hora_pr
         `INSERT INTO pedidos_saida (aluno_id, recorrente_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, hora_prevista_retorno, motivo, observacoes, status, data_criacao)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDENTE', NOW())`,
         [aluno_id, recorrente_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, hora_prevista_retorno, motivo, observacoes]
-=======
-async function cadastrar(aluno_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, motivo, observacoes) {
-    const [result] = await db.query(
-        `INSERT INTO pedidos_saida (aluno_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, motivo, observacoes, status, data_criacao)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDENTE', NOW())`,
-        [aluno_id, nome_aluno, turma_id, solicitante_id, hora_prevista_saida, motivo, observacoes]
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     );
 
     const pedido_id = result.insertId;
 
-<<<<<<< HEAD
     await historico.registrar(pedido_id, solicitante_id, null, 'PENDENTE', recorrente_id ? 'Solicitação gerada automaticamente (pedido recorrente)' : 'Solicitação criada pelo responsável');
-=======
-    await historico.registrar(pedido_id, solicitante_id, null, 'PENDENTE', 'Solicitação criada pelo responsável');
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
 
     return pedido_id;
 }
@@ -77,21 +65,18 @@ async function atualizarStatus(pedido_id, statusNovo, usuario_id, observacao = n
 // Base do SELECT usada nas buscas de pedidos, já com os JOINs necessários
 const SELECT_BASE = `
     SELECT p.pedidos_saida_id, p.nome_aluno, p.data_criacao, p.hora_prevista_saida,
-<<<<<<< HEAD
            p.hora_prevista_retorno, p.recorrente_id,
-=======
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
            p.status, p.motivo, p.observacoes, p.observacao,
            p.hora_saida_real, p.hora_retorno_real,
            t.sala_turma AS turma, t.turno,
            sol.nome AS responsavel,
-<<<<<<< HEAD
            usu.nome AS aprovador,
+           (SELECT u2.nome FROM historico_pedidos h
+              JOIN usuarios u2 ON h.usuario_id = u2.id_usuario
+             WHERE h.pedido_id = p.pedidos_saida_id AND h.status_novo IN ('APROVADA', 'RECUSADA')
+             ORDER BY h.id_historico DESC LIMIT 1) AS secretario,
            (p.status = 'EM_SAIDA' AND p.hora_prevista_retorno IS NOT NULL
                 AND NOW() > DATE_ADD(p.hora_prevista_retorno, INTERVAL 5 MINUTE)) AS atrasado
-=======
-           usu.nome AS aprovador
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
     FROM pedidos_saida p
     LEFT JOIN turmas t ON p.turma_id = t.id_turma
     LEFT JOIN usuarios sol ON p.solicitante_id = sol.id_usuario
@@ -113,6 +98,15 @@ async function buscarPorStatus(status) {
     return rows;
 }
 
+// Histórico geral da secretaria: tudo que já foi decidido ou seguiu adiante
+// (aprovada, recusada, em saída, concluída, cancelada), do mais recente ao mais antigo.
+async function buscarHistoricoGeral(limite = 300) {
+    const sql = `${SELECT_BASE} WHERE p.status <> 'PENDENTE'
+                 ORDER BY COALESCE(p.data_atualizacao, p.data_criacao) DESC LIMIT ?`;
+    const [rows] = await db.query(sql, [Number(limite) || 300]);
+    return rows;
+}
+
 // Buscar pedidos feitos por um solicitante (Pai/Histórico)
 async function buscarPorSolicitante(solicitante_id) {
     const sql = `${SELECT_BASE} WHERE p.solicitante_id = ? ORDER BY p.data_criacao DESC`;
@@ -126,17 +120,44 @@ async function buscarHistorico(pedido_id) {
 }
 
 // Busca os dados necessários para notificar o responsável por e-mail
-// (recusa pela secretaria ou cancelamento pela portaria).
+// (recusa, cancelamento, saída, retorno).
 async function buscarParaNotificacao(pedido_id) {
     const sql = `
-        SELECT p.pedidos_saida_id, p.nome_aluno, p.hora_prevista_saida,
+        SELECT p.pedidos_saida_id, p.aluno_id, p.solicitante_id, p.nome_aluno,
+               p.hora_prevista_saida, p.hora_prevista_retorno, p.hora_saida_real, p.hora_retorno_real,
+               t.sala_turma AS turma,
                sol.nome AS responsavel_nome, sol.email AS responsavel_email
         FROM pedidos_saida p
         JOIN usuarios sol ON p.solicitante_id = sol.id_usuario
+        LEFT JOIN turmas t ON p.turma_id = t.id_turma
         WHERE p.pedidos_saida_id = ?
     `;
     const [rows] = await db.query(sql, [pedido_id]);
     return rows[0] || null;
+}
+
+// Todos os responsáveis que devem receber os avisos sobre este pedido:
+// quem criou o pedido + todos os responsáveis vinculados ao aluno (pai, mãe...).
+// Sem e-mails repetidos.
+async function buscarDestinatariosPais(pedido) {
+    const params = [pedido.solicitante_id];
+    let sql = `SELECT id_usuario, nome, email FROM usuarios
+               WHERE email IS NOT NULL AND email <> ''
+                 AND (id_usuario = ?`;
+    if (pedido.aluno_id) {
+        sql += ` OR id_usuario IN (SELECT usuario_id FROM responsaveis_alunos WHERE aluno_id = ?)`;
+        params.push(pedido.aluno_id);
+    }
+    sql += `)`;
+    const [rows] = await db.query(sql, params);
+
+    const vistos = new Set();
+    return rows.filter(r => {
+        const chave = String(r.email).trim().toLowerCase();
+        if (vistos.has(chave)) return false;
+        vistos.add(chave);
+        return true;
+    });
 }
 
 // Retorna apenas o status atual do pedido (usado para validar transições,
@@ -149,7 +170,6 @@ async function obterStatus(pedido_id) {
     return rows.length > 0 ? rows[0].status : null;
 }
 
-<<<<<<< HEAD
 // ==========================================
 // ALERTA DE ATRASO NO RETORNO
 // ==========================================
@@ -180,6 +200,29 @@ async function buscarAtrasados() {
         ORDER BY p.hora_prevista_retorno ASC`;
     const [rows] = await db.query(sql);
     return rows;
+}
+
+// Pedidos em que o aluno AINDA NÃO VOLTOU (passou 5 min do retorno previsto) e os
+// pais ainda não foram avisados. Só considera retornos previstos nas últimas 24h,
+// para nunca disparar e-mail sobre pedidos antigos.
+async function buscarNaoRetornaramParaPais() {
+    const sql = `
+        SELECT p.pedidos_saida_id, p.aluno_id, p.solicitante_id, p.nome_aluno,
+               p.hora_prevista_retorno, p.hora_saida_real, t.sala_turma AS turma
+        FROM pedidos_saida p
+        LEFT JOIN turmas t ON p.turma_id = t.id_turma
+        WHERE p.status = 'EM_SAIDA'
+          AND p.hora_prevista_retorno IS NOT NULL
+          AND NOW() > DATE_ADD(p.hora_prevista_retorno, INTERVAL 5 MINUTE)
+          AND p.hora_prevista_retorno >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+          AND p.aviso_pais_atraso_enviado = 0
+    `;
+    const [rows] = await db.query(sql);
+    return rows;
+}
+
+async function marcarAvisoPaisEnviado(pedido_id) {
+    await db.query('UPDATE pedidos_saida SET aviso_pais_atraso_enviado = 1 WHERE pedidos_saida_id = ?', [pedido_id]);
 }
 
 async function marcarAlertaEnviado(pedido_id) {
@@ -255,13 +298,8 @@ async function obterEstatisticas(data) {
 
 module.exports = {
     cadastrar, atualizarStatus, buscarPorStatus, buscarPorSolicitante, buscarHistorico,
-    buscarParaNotificacao, obterStatus, buscarAtrasadosParaAlerta, buscarAtrasados,
+    buscarParaNotificacao, buscarDestinatariosPais, obterStatus, buscarAtrasadosParaAlerta, buscarAtrasados,
+    buscarNaoRetornaramParaPais, marcarAvisoPaisEnviado, buscarHistoricoGeral,
     marcarAlertaEnviado, obterEstatisticas
 };
 
-=======
-module.exports = {
-    cadastrar, atualizarStatus, buscarPorStatus, buscarPorSolicitante, buscarHistorico,
-    buscarParaNotificacao, obterStatus
-};
->>>>>>> 4f592c031e07562a0df70c9cabbe1e2474f1b4e7
