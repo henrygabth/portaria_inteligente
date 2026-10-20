@@ -28,6 +28,7 @@ const conexaoBanco = mysql.createPool({
 // diferentes, "atrasado", "pedido do dia" etc. ficam errados. Aqui a sessão de
 // cada conexão passa a usar o mesmo fuso do servidor Node.
 function offsetLocal() {
+    // O index.js já fixou process.env.TZ (America/Sao_Paulo), então isto devolve -03:00.
     const min = -new Date().getTimezoneOffset();
     const sinal = min >= 0 ? '+' : '-';
     const abs = Math.abs(min);

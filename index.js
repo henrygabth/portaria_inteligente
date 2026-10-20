@@ -1,5 +1,12 @@
+// FUSO HORÁRIO: precisa ser definido ANTES de qualquer outra coisa. Servidores como o
+// Render rodam em UTC; sem isso, o horário digitado pelo responsável (horário de Brasília)
+// era lido pelo servidor como UTC e aparecia 3h diferente na secretaria/portaria, e os
+// alertas de atraso disparavam fora de hora. Pode ser trocado com TZ_ESCOLA no .env/Render.
+process.env.TZ = process.env.TZ_ESCOLA || 'America/Sao_Paulo';
+
 // override: true -> o .env sempre vence variáveis antigas definidas no Windows
 require('dotenv').config({ override: true });
+process.env.TZ = process.env.TZ_ESCOLA || 'America/Sao_Paulo';
 
 // Em várias redes (comum no Windows) o Node resolve hosts como smtp.gmail.com
 // para IPv6 primeiro, mesmo sem rota IPv6 disponível, o que gera ECONNREFUSED

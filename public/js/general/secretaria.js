@@ -727,10 +727,13 @@ async function carregarPainelEstatisticas() {
     const token = localStorage.getItem('token');
     const inputData = document.getElementById('dataPainel');
 
+    // Data de hoje no horário LOCAL (toISOString usa UTC e virava "amanhã" a partir das 21h)
+    const d0 = new Date();
+    const hojeLocal = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
     if (inputData && !inputData.value) {
-        inputData.value = new Date().toISOString().slice(0, 10);
+        inputData.value = hojeLocal;
     }
-    const data = inputData ? inputData.value : new Date().toISOString().slice(0, 10);
+    const data = inputData ? inputData.value : hojeLocal;
 
     try {
         const resp = await fetch(`${API_URL}/pedidos/estatisticas?data=${data}`, {

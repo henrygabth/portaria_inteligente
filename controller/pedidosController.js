@@ -57,6 +57,10 @@ const pedidosController = {
                 return res.status(400).json({ erro: "Campos obrigatórios não preenchidos" });
             }
 
+            if (hora_prevista_retorno && new Date(hora_prevista_retorno) <= new Date(hora_prevista_saida)) {
+                return res.status(400).json({ erro: "O horário de retorno deve ser depois do horário de saída." });
+            }
+
             const vinculado = await responsaveisAlunosModel.pertence(solicitante_id, aluno_id);
             if (!vinculado) {
                 return res.status(403).json({ erro: "Este aluno não está vinculado à sua conta." });
@@ -295,7 +299,9 @@ const pedidosController = {
     // 10. SECRETARIA: painel de estatísticas do dia (ou de uma data específica)
     estatisticas: async (req, res) => {
         try {
-            const data = req.query.data || new Date().toISOString().slice(0, 10);
+            const hoje = new Date();
+            const hojeLocal = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+            const data = req.query.data || hojeLocal;
             const resultado = await pedidos.obterEstatisticas(data);
             res.json(resultado);
         } catch (error) {

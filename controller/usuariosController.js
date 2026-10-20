@@ -9,6 +9,7 @@ const { OAuth2Client } = require("google-auth-library");
 const { enviarEmail } = require('../utils/email');
 const { montarEmailHtml } = require('../utils/emailTemplate');
 const { verificarEmail } = require('../utils/verificarEmail');
+const { formatarCPF, formatarTelefone } = require('../utils/formatadores');
 
 const MSG_PERFIL_DESATIVADO = 'Este perfil está desativado. Procure a secretaria da escola para reativar o seu acesso.';
 
@@ -45,9 +46,9 @@ const usuariosController = {
 
             const id = await usuariosModel.cadastrar(
                 nome,
-                cpf,
+                formatarCPF(cpf),
                 email,
-                telefone,
+                formatarTelefone(telefone),
                 senhaHash,
                 tipoPadronizado,
                 status || '1'
@@ -272,7 +273,7 @@ const usuariosController = {
                 novaSenhaHash = await bcrypt.hash(novaSenha, 10);
             }
 
-            await usuariosModel.atualizarConta(req.usuario.id_usuario, nome, email, telefone, novaSenhaHash);
+            await usuariosModel.atualizarConta(req.usuario.id_usuario, nome, email, formatarTelefone(telefone), novaSenhaHash);
             return res.json({ mensagem: 'Conta atualizada com sucesso!' });
         } catch (error) {
             console.error('Erro ao atualizar conta:', error);
@@ -475,7 +476,7 @@ const usuariosController = {
             const senhaHash = await bcrypt.hash(senhaTemporaria, 10);
 
             const usuario_id = await usuariosModel.cadastrar(
-                nome, cpf, email, telefone, senhaHash, 'PAI', '1'
+                nome, formatarCPF(cpf), email, formatarTelefone(telefone), senhaHash, 'PAI', '1'
             );
 
             const aluno_id = await alunosModel.buscarOuCriar(nome_aluno, turma_id || null);

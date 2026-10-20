@@ -18,11 +18,11 @@ function esc(valor) {
 }
 
 function fmtHora(data) {
-    return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
 function fmtData(data) {
-    return new Date(data).toLocaleDateString('pt-BR');
+    return new Date(data).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
 }
 
 function linhaDestaque(rotulo, valor) {

@@ -13,9 +13,8 @@ const { montarEmailHtml } = require('./emailTemplate');
 const { notificarResponsaveis } = require('./emailsPais');
 
 function hojeStr() {
-    const agora = new Date();
-    const offsetMs = agora.getTimezoneOffset() * 60000;
-    return new Date(agora.getTime() - offsetMs).toISOString().slice(0, 10);
+    const agora = new Date(); // fuso do servidor = America/Sao_Paulo (definido no index.js)
+    return `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
 }
 
 // --------------------------------------------------------
@@ -83,7 +82,7 @@ async function alertarEscolaSobreAtrasos() {
     }
 
     for (const pedido of atrasados) {
-        const horaPrevista = new Date(pedido.hora_prevista_retorno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const horaPrevista = new Date(pedido.hora_prevista_retorno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 
         if (destinatarios.length > 0) {
             const html = montarEmailHtml({
