@@ -101,7 +101,7 @@ const usuariosModel = {
     },
 
     buscarStatusPorId: async (id) => {
-        const [rows] = await db.query('SELECT status FROM usuarios WHERE id_usuario = ?', [id]);
+        const [rows] = await db.query('SELECT status, tipo_usuario FROM usuarios WHERE id_usuario = ?', [id]);
         return rows[0] || null;
     },
 

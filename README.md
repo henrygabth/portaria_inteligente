@@ -72,6 +72,8 @@ projeto-liberacao-aluno/
 
 ---
 
+**Deploy em homologação no Render:** consulte [`DEPLOY_RENDER.md`](DEPLOY_RENDER.md). O arquivo `render.yaml` é opcional e prepara um serviço de teste separado.
+
 ## Como Rodar o Projeto
 
 ### Pré-requisitos
@@ -83,7 +85,7 @@ projeto-liberacao-aluno/
 
 **1. Clone o repositório**
 ```bash
-git clone https://github.com/henrygabth/proj_liberacaoAluno
+git clone https://github.com/henrygabth/portaria_inteligente
 ```
 
 
@@ -94,13 +96,8 @@ npm install
 
 **3. Configure com seu banco de dados**
 
-Abra o MySQL Workbench, crie um banco de dados.
-No projeto, entre na pasta:
-```
-config/banco.js
-```
-Em DB_HOST, troque para seu servidor IP.
-Faça o mesmo para DB_USER, DB_PASSWORD e DB_NAME.
+Copie `.env.local.example` para `.env` e informe `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` e `JWT_SECRET`.
+Não inclua senhas no código e não envie `.env` ao GitHub.
 
 **4. Inicie o servidor**
 ```bash

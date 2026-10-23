@@ -25,12 +25,13 @@ async function exigirStatus(res, pedido_id, esperado, mensagemErro) {
 
 // Monta o e-mail de aviso ao responsável quando um pedido é recusado ou cancelado
 function montarEmailNegativa({ nomeAluno, nomeResponsavel, motivo, quem }) {
-    const acao = quem === 'PORTARIA' ? 'cancelada pela portaria' : 'recusada pela secretaria';
+    const cancelada = quem === 'CANCELAMENTO';
+    const acao = cancelada ? 'cancelada pela secretaria' : 'recusada pela secretaria';
     return {
-        subject: `Solicitação de saída ${quem === 'PORTARIA' ? 'cancelada' : 'recusada'} - ${nomeAluno}`,
+        subject: `Solicitação de saída ${cancelada ? 'cancelada' : 'recusada'} - ${nomeAluno}`,
         text: `Olá ${nomeResponsavel}, a solicitação de saída de ${nomeAluno} foi ${acao}. Motivo: ${motivo}`,
         html: montarEmailHtml({
-            titulo: `Solicitação de saída ${quem === 'PORTARIA' ? 'cancelada' : 'recusada'}`,
+            titulo: `Solicitação de saída ${cancelada ? 'cancelada' : 'recusada'}`,
             saudacao: `Olá, <strong>${nomeResponsavel}</strong>.`,
             paragrafos: [`A solicitação de saída de <strong>${nomeAluno}</strong> foi ${acao}.`],
             destaque: `<p style="margin: 0; color: #2d3748; font-size: 13px;"><strong>Motivo:</strong> ${motivo}</p>`,
@@ -93,7 +94,7 @@ const pedidosController = {
             res.json({ mensagem: "Pedido aprovado com sucesso e enviado para a portaria" });
         } catch (error) {
             console.error('Erro ao aprovar pedido:', error);
-            res.status(500).json({ erro: "Erro ao aprovar pedido" });
+            res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao aprovar pedido" });
         }
     },
 
@@ -136,7 +137,7 @@ const pedidosController = {
             });
         } catch (error) {
             console.error('Erro ao rejeitar pedido:', error);
-            res.status(500).json({ erro: "Erro ao rejeitar pedido" });
+            res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao rejeitar pedido" });
         }
     },
 
@@ -155,7 +156,7 @@ const pedidosController = {
             res.json({ mensagem: "Aluno liberado na portaria com horário registrado. Os responsáveis serão avisados por e-mail." });
         } catch (error) {
             console.error('Erro ao liberar pedido:', error);
-            res.status(500).json({ erro: "Erro ao liberar pedido" });
+            res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao liberar pedido" });
         }
     },
 
@@ -168,27 +169,36 @@ const pedidosController = {
             const ok = await pedidos.atualizarStatus(pedido_id, 'CONCLUIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
 
-            // Avisa os responsáveis (no horário ou com atraso) sem segurar a resposta
-            notificarResponsaveis(pedido_id, 'RETORNO');
+            // Retorno no prazo: mantém o e-mail existente.
+            // Retorno atrasado: o agendador envia a TODOS via fila persistente
+            // (inclusive aos responsáveis), sem duplicar o e-mail ao responsável.
+            void (async () => {
+                const dados = await pedidos.buscarParaNotificacao(pedido_id);
+                if (!dados || !dados.hora_prevista_retorno || !dados.hora_retorno_real ||
+                    new Date(dados.hora_retorno_real).getTime() <=
+                        new Date(dados.hora_prevista_retorno).getTime() + 5 * 60 * 1000) {
+                    await notificarResponsaveis(pedido_id, 'RETORNO', dados);
+                }
+            })().catch(e => console.error('[portaria] Falha ao preparar aviso de retorno:', e));
 
             res.json({ mensagem: "Retorno do aluno registrado com sucesso! Os responsáveis serão avisados por e-mail." });
         } catch (error) {
             console.error('Erro ao registrar retorno do aluno:', error);
-            res.status(500).json({ erro: "Erro ao registrar retorno do aluno" });
+            res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao registrar retorno do aluno" });
         }
     },
 
-    // 5b. PORTARIA: Cancelar um pedido já aprovado (motivo obrigatório, notifica por e-mail)
+    // 5b. SECRETARIA: Cancelar um pedido já aprovado (motivo obrigatório, notifica por e-mail)
     // Só pode cancelar enquanto o pedido está APROVADA (aguardando liberação);
     // depois que o aluno já saiu (EM_SAIDA), o fluxo correto é registrar o retorno.
-    cancelarPortaria: async (req, res) => {
+    cancelarSecretaria: async (req, res) => {
         try {
             const pedido_id = req.params.id;
             const usuario_id = req.usuario.id_usuario;
             const { observacao } = req.body;
 
-            if (!observacao || !observacao.trim()) {
-                return res.status(400).json({ erro: "Informe o motivo do cancelamento." });
+            if (typeof observacao !== 'string' || !observacao.trim() || observacao.trim().length > 500) {
+                return res.status(400).json({ erro: "Informe o motivo do cancelamento (até 500 caracteres)." });
             }
 
             const statusAtual = await pedidos.obterStatus(pedido_id);
@@ -209,7 +219,7 @@ const pedidosController = {
                         nomeAluno: dados.nome_aluno,
                         nomeResponsavel: dados.responsavel_nome,
                         motivo: observacao,
-                        quem: 'PORTARIA'
+                        quem: 'CANCELAMENTO'
                     });
                     await enviarEmail({ to: dados.responsavel_email, subject, text, html });
                 }
@@ -220,12 +230,12 @@ const pedidosController = {
 
             res.json({
                 mensagem: emailEnviado
-                    ? "Pedido cancelado na portaria e responsável notificado por e-mail."
+                    ? "Pedido cancelado pela secretaria e responsável notificado por e-mail."
                     : "Pedido cancelado, mas não foi possível enviar o e-mail ao responsável."
             });
         } catch (error) {
-            console.error('Erro ao cancelar pedido na portaria:', error);
-            res.status(500).json({ erro: "Erro ao cancelar pedido" });
+            console.error('Erro ao cancelar pedido na secretaria:', error);
+            res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao cancelar pedido" });
         }
     },
 
@@ -233,6 +243,13 @@ const pedidosController = {
     listarPorStatus: async (req, res) => {
         try {
             const { status } = req.query;
+            const papel = (req.usuario.tipo_usuario || '').toUpperCase();
+            const portaria = ['PORTEIRO', 'PORTARIA'].includes(papel);
+            // Escopo imposto pelo backend, não apenas por uma lista no navegador.
+            const permitidos = ['APROVADA', 'EM_SAIDA', 'CONCLUIDA'];
+            if (portaria && !permitidos.includes(status)) {
+                return res.status(403).json({ erro: 'A portaria só consulta saídas aprovadas, em andamento ou concluídas.' });
+            }
             const resultado = await pedidos.buscarPorStatus(status);
             res.json(resultado);
         } catch (error) {
@@ -264,6 +281,9 @@ const pedidosController = {
             if (!equipe && String(id) !== String(req.usuario.id_usuario)) {
                 return res.status(403).json({ erro: "Você só pode ver as suas próprias solicitações." });
             }
+            if (['PORTARIA', 'PORTEIRO'].includes(papel)) {
+                return res.status(403).json({ erro: 'Consulte somente o painel operacional da portaria.' });
+            }
             const resultado = await pedidos.buscarPorSolicitante(id);
             res.json(resultado);
         } catch (error) {
@@ -276,6 +296,12 @@ const pedidosController = {
     buscarHistorico: async (req, res) => {
         try {
             const { id } = req.params;
+            if (['PORTARIA', 'PORTEIRO'].includes((req.usuario.tipo_usuario || '').toUpperCase())) {
+                const status = await pedidos.obterStatus(id);
+                if (!['APROVADA', 'EM_SAIDA', 'CONCLUIDA'].includes(status)) {
+                    return res.status(404).json({ erro: 'Histórico não encontrado.' });
+                }
+            }
             const resultado = await pedidos.buscarHistorico(id);
             res.json(resultado);
         } catch (error) {

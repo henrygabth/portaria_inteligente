@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
 
 // A logo é enviada como anexo embutido (cid) por utils/email.js.
 // Imagens "data:" em base64 são bloqueadas pelo Gmail e deixavam o e-mail enorme.

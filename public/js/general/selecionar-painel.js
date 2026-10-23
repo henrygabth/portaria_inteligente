@@ -78,6 +78,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = 'portaria.html';
         return;
     }
+    if (tipo === 'PROFESSOR') {
+        window.location.href = 'professor.html';
+        return;
+    }
     if (tipo === 'PAI' || tipo === 'RESPONSAVEL') {
         window.location.href = 'home.html';
         return;

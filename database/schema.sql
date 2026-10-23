@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email          VARCHAR(150) NOT NULL UNIQUE,
     telefone       VARCHAR(20),
     senha          VARCHAR(255) NOT NULL,
-    tipo_usuario   ENUM('PAI', 'SECRETARIA', 'PORTARIA', 'ADMIN') NOT NULL,
+    tipo_usuario   ENUM('PAI', 'SECRETARIA', 'PORTARIA', 'PORTEIRO', 'ADMIN', 'PROFESSOR') NOT NULL,
     status         VARCHAR(20) DEFAULT '1',          -- '1' = ativo, '0' = perfil desativado
     primeiro_acesso TINYINT(1) NOT NULL DEFAULT 1,   -- 1 até o primeiro login (sugere troca de senha)
     data_criacao   DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -117,3 +117,6 @@ INSERT INTO turmas (sala_turma, turno) VALUES
     ('1º Termo Desenvolvimento de Sistemas A', 'Manhã'),
     ('2º Termo Desenvolvimento de Sistemas B', 'Tarde')
 ON DUPLICATE KEY UPDATE sala_turma = VALUES(sala_turma);
+
+-- Modulo dos professores: para novas instalacoes, aplicar tambem
+-- database/migration_professores_up.sql apos schema.sql (a alteracao enum e idempotente).

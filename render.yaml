@@ -1,0 +1,33 @@
+# Opcional: Blueprint de serviço separado para homologação.
+# Não use este arquivo para sobrescrever o serviço de produção existente.
+services:
+  - type: web
+    name: portaria-inteligente-homologacao
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/saude
+    envVars:
+      - key: AMBIENTE
+        value: homologacao
+      - key: MIGRACAO_AUTOMATICA
+        value: '0'
+      - key: AGENDADOR_ATIVO
+        value: '0'
+      - key: EMAILS_REAIS_NO_TESTE
+        value: '0'
+      - key: TZ_ESCOLA
+        value: America/Sao_Paulo
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

@@ -77,26 +77,6 @@
     font-weight: 700;
 }
 
-/* Botão de Cancelamento na Tabela (espelha o .btn-liberar para ficar alinhado) */
-.btn-cancelar {
-    background-color: var(--senai-red, #E52207);
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.3s ease;
-    font-size: 14px;
-}
-
-.btn-cancelar:hover {
-    background-color: #b81b06;
-}
-
 /* Container das ações (Liberar/Cancelar) lado a lado, alinhadas e formatadas */
 .acoes-portaria {
     display: flex;

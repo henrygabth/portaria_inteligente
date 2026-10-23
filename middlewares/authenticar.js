@@ -39,6 +39,8 @@ const auth = async (req, res, next) => {
         if (!usuariosModel.estaAtivo(registro)) {
             return res.status(403).json({ erro: 'Este perfil está desativado. Procure a secretaria da escola.', perfilDesativado: true });
         }
+        // O papel vigente vem do banco, para tokens antigos não manterem permissões revogadas.
+        req.usuario.tipo_usuario = registro.tipo_usuario;
     } catch (error) {
         console.error('Erro ao conferir status do usuário:', error);
         return res.status(500).json({ erro: 'Erro ao validar o acesso do usuário.' });

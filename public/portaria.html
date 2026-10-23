@@ -134,7 +134,7 @@
         <section id="tela-historico" style="display: none;">
             <h1>Histórico de Saídas Realizadas</h1>
             <div class="card">
-                <p class="descricao-tela">Saídas concluídas e pedidos cancelados pela portaria.</p>
+                <p class="descricao-tela">Histórico das saídas concluídas.</p>
                 <div class="filter-area">
                     <label for="filtroPortaria" style="font-weight: 600; color: var(--dark-blue);">Período:</label>
                     <select id="filtroPortaria" class="filter-select">
@@ -154,7 +154,7 @@
                                 <th>Horário de Retorno</th>
                                 <th>Responsável</th>
                                 <th>Status</th>
-                                <th>Motivo (se cancelado)</th>
+                                <th>Situação</th>
                             </tr>
                         </thead>
                         <tbody id="tabelaHistoricoPortariaBody">
@@ -168,18 +168,6 @@
         </section>
 
     </main>
-
-    <div id="modalCancelar" class="modal-negativa" style="display: none;">
-        <div class="modal-content">
-            <h2><i class="fas fa-exclamation-circle" style="color: var(--senai-red);"></i> Cancelar Pedido</h2>
-            <p>Informe o motivo do cancelamento (o responsável será avisado por e-mail):</p>
-            <textarea id="motivoCancelamento" rows="4" placeholder="Ex: Responsável não compareceu, aluno não localizado..."></textarea>
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="fecharModalCancelar()">Voltar</button>
-                <button class="btn-action btn-deny" onclick="confirmarCancelamento()">Confirmar Cancelamento</button>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <script src="./js/general/sessao.js?v=1"></script>

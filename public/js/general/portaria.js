@@ -152,9 +152,6 @@ async function carregarSaidas() {
                             <button class="btn-liberar" onclick="liberarSaida(${pedido.pedidos_saida_id})">
                                 <i class="fas fa-check-circle"></i> Liberar
                             </button>
-                            <button class="btn-cancelar" onclick="abrirModalCancelar(${pedido.pedidos_saida_id})">
-                                <i class="fas fa-times-circle"></i> Cancelar
-                            </button>
                         </div>
                     </td>
                 `;
@@ -191,59 +188,6 @@ async function liberarSaida(id) {
         }
     } catch (err) {
         alert('Erro de conexão com o servidor');
-    }
-}
-
-// ==========================================
-// 1b. CANCELAR PEDIDO NA PORTARIA (motivo obrigatório, notifica por e-mail)
-// ==========================================
-let pedidoParaCancelar = null;
-
-function abrirModalCancelar(id) {
-    pedidoParaCancelar = id;
-    const modal = document.getElementById('modalCancelar');
-    if (modal) modal.style.display = 'flex';
-}
-
-function fecharModalCancelar() {
-    const modal = document.getElementById('modalCancelar');
-    if (modal) modal.style.display = 'none';
-    const campoMotivo = document.getElementById('motivoCancelamento');
-    if (campoMotivo) campoMotivo.value = '';
-}
-
-async function confirmarCancelamento() {
-    const campoMotivo = document.getElementById('motivoCancelamento');
-    const motivo = campoMotivo ? campoMotivo.value.trim() : '';
-    if (!motivo) {
-        alert('Informe o motivo do cancelamento.');
-        return;
-    }
-
-    const token = localStorage.getItem('token');
-    try {
-        const resp = await fetch(`${API_URL}/pedidos/cancelar/${pedidoParaCancelar}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ observacao: motivo })
-        });
-
-        const data = await resp.json();
-
-        if (resp.ok) {
-            alert(data.mensagem || 'Pedido cancelado.');
-            carregarSaidas();
-            carregarHistoricoPortaria();
-        } else {
-            alert('Erro: ' + (data.erro || 'Falha ao cancelar'));
-        }
-    } catch (err) {
-        alert('Erro de conexão com o servidor');
-    } finally {
-        fecharModalCancelar();
     }
 }
 
@@ -328,7 +272,7 @@ async function registrarRetorno(id) {
 }
 
 // ==========================================
-// 3. HISTÓRICO (status = CONCLUIDA ou CANCELADA)
+// 3. HISTÓRICO (somente saídas concluídas)
 // ==========================================
 let historicoPortariaCache = [];
 
@@ -369,14 +313,12 @@ function renderizarHistoricoPortaria() {
         const horaRetorno = pedido.hora_retorno_real ? new Date(pedido.hora_retorno_real).toLocaleString('pt-BR') : '-';
 
         let statusLabel;
-        if (pedido._situacao === 'CANCELADA') {
-            statusLabel = '<span class="status status-cancelada">Cancelado</span>';
-        } else if (pedido._comAtraso) {
+        if (pedido._comAtraso) {
             statusLabel = '<span class="status status-atrasado">Voltou com atraso</span>';
         } else {
             statusLabel = '<span class="status status-aprovada">Concluído</span>';
         }
-        const motivo = pedido._situacao === 'CANCELADA' ? esc(pedido.observacao || '-') : '-';
+
 
         tr.innerHTML = `
             <td>${celulaAluno(pedido)}</td>
@@ -385,7 +327,7 @@ function renderizarHistoricoPortaria() {
             <td>${horaRetorno}</td>
             <td>${esc(pedido.responsavel || '-')}</td>
             <td>${statusLabel}</td>
-            <td>${motivo}</td>
+            <td>${pedido._comAtraso ? 'Atrasado' : 'No horário'}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -397,16 +339,10 @@ async function carregarHistoricoPortaria() {
     if (!tbody) return;
 
     try {
-        const [respConcluidas, respCanceladas] = await Promise.all([
-            fetch(`${API_URL}/pedidos/listarPorStatus?status=CONCLUIDA`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            }),
-            fetch(`${API_URL}/pedidos/listarPorStatus?status=CANCELADA`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-        ]);
-
-        if (!respConcluidas.ok || !respCanceladas.ok) throw new Error('Falha ao carregar histórico');
+        const respConcluidas = await fetch(`${API_URL}/pedidos/listarPorStatus?status=CONCLUIDA`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!respConcluidas.ok) throw new Error('Falha ao carregar histórico');
 
         // Mesma tolerância de 5 minutos usada no alerta de atraso
         const concluidas = (await respConcluidas.json()).map(p => ({
@@ -415,10 +351,9 @@ async function carregarHistoricoPortaria() {
             _comAtraso: !!(p.hora_prevista_retorno && p.hora_retorno_real &&
                 new Date(p.hora_retorno_real) - new Date(p.hora_prevista_retorno) > 5 * 60000)
         }));
-        const canceladas = (await respCanceladas.json()).map(p => ({ ...p, _situacao: 'CANCELADA' }));
 
         const momento = p => new Date(p.hora_retorno_real || p.hora_saida_real || p.data_criacao || 0).getTime();
-        historicoPortariaCache = [...concluidas, ...canceladas].sort((a, b) => momento(b) - momento(a));
+        historicoPortariaCache = concluidas.sort((a, b) => momento(b) - momento(a));
 
         renderizarHistoricoPortaria();
     } catch (err) {

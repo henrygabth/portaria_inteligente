@@ -140,12 +140,28 @@ async function enviarPorSmtp({ to, subject, text, html, fromName }) {
 }
 
 // ------------------------------------------------------------- Interface
+// Em homologação no Render, nenhum e-mail real sai por padrão.
+// A aplicação usa a mesma rotina de simulação que já existia no teste local.
+function enviosSimulados() {
+    const ambienteSeguro = process.env.MODO_TESTE_LOCAL === '1' || process.env.AMBIENTE === 'homologacao';
+    return ambienteSeguro && process.env.EMAILS_REAIS_NO_TESTE !== '1';
+}
+
 async function enviarEmail({ to, subject, text, html, fromName = 'Portaria Inteligente' }) {
+    if (enviosSimulados()) {
+        // Entrega simulada apenas no ambiente de teste. Evita enviar mensagens
+        // reais a responsáveis/professores durante a homologação.
+        console.log(`[email][SIMULADO] Destinatário: ${to} | Assunto: ${subject}`);
+        return { messageId: 'simulado-local', simulado: true };
+    }
     if (usaApi()) return enviarPorApi({ to, subject, text, html, fromName });
     return enviarPorSmtp({ to, subject, text, html, fromName });
 }
 
 async function verificarConexao() {
+    if (enviosSimulados()) {
+        return [{ porta: 'Simulação local', ok: true, simulado: true }];
+    }
     if (usaApi()) {
         try {
             await chamarApi('GET', '/account');

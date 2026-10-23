@@ -1,0 +1,16 @@
+/* Reusa os estilos existentes de secretaria.css/home.css; somente complementos. */
+.filtros-professor {flex-wrap:wrap;gap:9px;margin:16px 0;display:flex;align-items:center}
+.filtros-professor .filter-select {max-width:220px;min-width:100px}
+.notificacao-contador {display:inline-block;min-width:20px;padding:2px 7px;border-radius:15px;background:var(--senai-red,#e52207);color:white;font-size:12px;text-align:center}
+.btn-professor {background:#0052cc;color:white;border:0;border-radius:6px;padding:9px 12px;font:inherit;font-size:13px}
+.btn-professor:hover{filter:brightness(.9)}
+.comunicado-novo {font-weight:650;background:rgba(0,82,204,.07)}
+.prof-tag{display:inline-block;padding:5px 9px;border-radius:12px;font-size:12px;font-weight:650;background:#e7efff;color:#063e9b}
+.prof-tag.saiu{background:#fff3d3;color:#755400}
+.prof-tag.atrasado,.prof-tag.nao_retornou{background:#ffebe9;color:#a61a11}
+.prof-tag.dentro{background:#dcfce7;color:#146c2e}
+.prof-tag.aprovada{background:#d8edff;color:#06457c}
+.prof-aviso {padding:15px;background:#f4f6f8;border-radius:8px;color:#334155}
+[data-theme="dark"] .prof-aviso{background:#263449;color:#e2e8f0}
+[data-theme="dark"] .comunicado-novo{background:rgba(0,82,204,.17)}
+@media(max-width:768px){.filtros-professor{align-items:stretch}.filtros-professor .filter-select{flex:1;max-width:none}}

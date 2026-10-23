@@ -1,0 +1,31 @@
+name: Portaria Inteligente - testes
+
+on:
+  push:
+    branches:
+      - homologacao-render-professores
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+      - name: Preparar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci
+      - name: Rodar testes automatizados
+        run: npm test
+      - name: Verificar sintaxe dos arquivos principais
+        run: |
+          node --check index.js
+          node --check utils/email.js
+          node --check utils/configurarPrimeiraExecucao.js

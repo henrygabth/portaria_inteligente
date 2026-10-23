@@ -4,16 +4,16 @@ const pedidosController = require('../controller/pedidosController');
 const { auth, exigirPapel } = require('../middlewares/authenticar');
 
 // Rotas do fluxo de saída de alunos
-rotas.post('/cadastrar', auth, pedidosController.cadastrar);
+rotas.post('/cadastrar', auth, exigirPapel('PAI', 'SECRETARIA', 'ADMIN'), pedidosController.cadastrar);
 
 // Só a Secretaria (ou Admin) pode aprovar/rejeitar um pedido.
 rotas.put('/aprovar/:id', auth, exigirPapel('SECRETARIA', 'ADMIN'), pedidosController.aprovar);
 rotas.put('/rejeitar/:id', auth, exigirPapel('SECRETARIA', 'ADMIN'), pedidosController.rejeitar);
 
-// Só a Portaria (ou Admin) pode liberar, registrar retorno ou cancelar.
+// Só a Portaria (ou Admin) registra saída/retorno. Cancelamento compete à secretaria.
 rotas.put('/liberar/:id', auth, exigirPapel('PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.liberar);
 rotas.put('/retorno/:id', auth, exigirPapel('PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.retorno);
-rotas.put('/cancelar/:id', auth, exigirPapel('PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.cancelarPortaria);
+rotas.put('/cancelar/:id', auth, exigirPapel('SECRETARIA', 'ADMIN'), pedidosController.cancelarSecretaria);
 
 // Listas gerais de pedidos: só a equipe da escola (responsáveis usam /solicitante/:id).
 rotas.get('/listarPorStatus', auth, exigirPapel('SECRETARIA', 'PORTEIRO', 'PORTARIA', 'ADMIN'), pedidosController.listarPorStatus);

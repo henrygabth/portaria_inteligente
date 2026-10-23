@@ -130,7 +130,7 @@ async function login(event) {
                 ? 'selecionar-painel.html'
                 : (data.redirecionarPara || (
                     tipoUsuario === 'SECRETARIA' ? 'secretaria.html' :
-                    tipoUsuario === 'PORTEIRO' || tipoUsuario === 'PORTARIA' ? 'portaria.html' : 'home.html'
+                    tipoUsuario === 'PORTEIRO' || tipoUsuario === 'PORTARIA' ? 'portaria.html' : tipoUsuario === 'PROFESSOR' ? 'professor.html' : 'home.html'
                 ));
 
             window.location.href = destino;
@@ -240,7 +240,7 @@ function logout() {
 }
 
 function checkAuth() {
-    const paginasProtegidas = ['home.html', 'secretaria.html', 'portaria.html', 'selecionar-painel.html'];
+    const paginasProtegidas = ['home.html', 'secretaria.html', 'portaria.html', 'professor.html', 'professores-admin.html', 'selecionar-painel.html'];
     const paginaAtual = window.location.pathname.split('/').pop();
 
     if (paginasProtegidas.includes(paginaAtual) && !localStorage.getItem('token')) {

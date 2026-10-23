@@ -42,7 +42,13 @@ const usuariosController = {
             }
 
             const senhaHash = await bcrypt.hash(senha, 10);
-            const tipoPadronizado = tipo_usuario.trim().toUpperCase();
+            const tipoPadronizado = String(tipo_usuario).trim().toUpperCase();
+            const papeisPermitidos = req.usuario.tipo_usuario === 'ADMIN'
+                ? ['PAI', 'SECRETARIA', 'PORTARIA', 'PROFESSOR']
+                : ['PAI', 'PORTARIA'];
+            if (!papeisPermitidos.includes(tipoPadronizado)) {
+                return res.status(403).json({ erro: 'Perfil não permitido para cadastro.' });
+            }
 
             const id = await usuariosModel.cadastrar(
                 nome,
@@ -133,6 +139,8 @@ const usuariosController = {
                 redirecionarPara = 'secretaria.html';
             } else if (tipo === 'PORTARIA' || tipo === 'PORTEIRO') {
                 redirecionarPara = 'portaria.html';
+            } else if (tipo === 'PROFESSOR') {
+                redirecionarPara = 'professor.html';
             } else if (tipo === 'PAI' || tipo === 'RESPONSAVEL') {
                 redirecionarPara = 'home.html';
             }
@@ -195,6 +203,8 @@ const usuariosController = {
                 redirecionarPara = 'secretaria.html';
             } else if (tipo === 'PORTARIA' || tipo === 'PORTEIRO') {
                 redirecionarPara = 'portaria.html';
+            } else if (tipo === 'PROFESSOR') {
+                redirecionarPara = 'professor.html';
             }
 
             return res.json({
@@ -297,7 +307,7 @@ const usuariosController = {
                 { expiresIn: '15m' }
             );
 
-            const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+            const baseUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
             const linkRecuperacao = `${baseUrl}/reset_password.html?token=${tokenReset}`;
             const mailOptions = {
                 fromName: 'Controle de Saidas',
@@ -364,7 +374,7 @@ const usuariosController = {
         try {
             const papelLogado = (req.usuario.tipo_usuario || '').toUpperCase();
             const tipos = papelLogado === 'ADMIN'
-                ? ['PAI', 'PORTARIA', 'PORTEIRO', 'SECRETARIA']
+                ? ['PAI', 'PORTARIA', 'PORTEIRO', 'SECRETARIA', 'PROFESSOR']
                 : ['PAI', 'PORTARIA', 'PORTEIRO'];
             const perfis = await usuariosModel.listarPerfis(tipos);
             return res.json(perfis.map(p => ({

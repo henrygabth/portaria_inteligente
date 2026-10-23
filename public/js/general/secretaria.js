@@ -389,7 +389,7 @@ const ROTULO_STATUS_SECRETARIA = {
     RECUSADA: 'Recusada',
     EM_SAIDA: 'Aluno fora da escola',
     CONCLUIDA: 'Concluída',
-    CANCELADA: 'Cancelada pela portaria'
+    CANCELADA: 'Cancelada pela secretaria'
 };
 
 let historicoSecretariaCache = [];
@@ -435,10 +435,28 @@ function renderizarHistoricoSecretaria() {
             <td>${esc(pedido.turma || '-')}</td>
             <td>${formatarHorario(pedido.hora_prevista_saida)}</td>
             <td><span class="status ${classe}">${ROTULO_STATUS_SECRETARIA[pedido.status] || esc(pedido.status)}</span></td>
-            <td>${esc(pedido.secretario || pedido.aprovador || '-')}</td>
+            <td>${esc(pedido.secretario || pedido.aprovador || '-')}
+                ${pedido.status === 'APROVADA' ? `<button type="button" class="btn-perfil desativar"
+                    onclick="cancelarPedidoSecretaria(${pedido.pedidos_saida_id})">Cancelar</button>` : ''}</td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+async function cancelarPedidoSecretaria(id) {
+    const motivo = prompt('Motivo do cancelamento da solicitação aprovada:');
+    if (motivo === null) return;
+    if (!motivo.trim() || motivo.trim().length > 500) return alert('Informe um motivo de até 500 caracteres.');
+    try {
+        const resposta = await fetch(`${API_URL}/pedidos/cancelar/${id}`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ observacao: motivo.trim() })
+        });
+        const dados = await resposta.json();
+        alert(dados.mensagem || dados.erro || 'Não foi possível cancelar.');
+        if (resposta.ok) carregarHistoricoSecretaria();
+    } catch (_) { alert('Erro de conexão com o servidor.'); }
 }
 
 async function carregarHistoricoSecretaria() {
@@ -619,7 +637,7 @@ async function salvarAlteracaoAluno(aluno_id) {
 // 3a. GERENCIAR PERFIS (ativar / desativar acesso)
 // ==========================================
 let perfisCache = [];
-const ROTULO_TIPO_PERFIL = { PAI: 'Responsável', PORTARIA: 'Portaria', PORTEIRO: 'Portaria', SECRETARIA: 'Secretaria', ADMIN: 'Admin' };
+const ROTULO_TIPO_PERFIL = { PAI: 'Responsável', PORTARIA: 'Portaria', PORTEIRO: 'Portaria', SECRETARIA: 'Secretaria', PROFESSOR: 'Professor', ADMIN: 'Admin' };
 
 async function carregarPerfis() {
     const token = localStorage.getItem('token');
@@ -976,6 +994,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((usuarioLogado.tipo_usuario || '').toUpperCase() === 'ADMIN') {
         const linkTrocarPainel = document.getElementById('linkTrocarPainel');
         if (linkTrocarPainel) linkTrocarPainel.style.display = 'block';
+        const linkProfessores = document.getElementById('linkGerenciarProfessores');
+        if (linkProfessores) linkProfessores.style.display = 'block';
     }
 
     const menuToggle = document.getElementById('menuToggle');

@@ -146,6 +146,7 @@ async function migrar() {
         console.log('[migrar] Estrutura do banco conferida.');
     } catch (err) {
         console.error('[migrar] Erro ao conferir a estrutura do banco:', err.message);
+        throw err;
     }
 }
 

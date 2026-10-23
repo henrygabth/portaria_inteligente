@@ -1,16 +1,14 @@
 // utils/agendador.js
 // Tarefas de fundo, sem depender de nenhuma lib de cron externa:
 //   1) Gerar os pedidos do dia a partir dos horários fixos (pedidos recorrentes).
-//   2) Alertar secretaria/portaria quando um aluno não volta no horário previsto.
-//   3) Avisar os PAIS por e-mail quando o aluno não voltou no horário previsto.
+//   2) Enviar alertas de atraso/não retorno/chegada atrasada a todos os grupos.
+//   3) Guardar histórico e evitar envios repetidos por destinatário.
 // Rodam de tempos em tempos enquanto o servidor Node estiver de pé.
 
 const pedidosModel = require('../model/pedidosModel');
 const pedidosRecorrentesModel = require('../model/pedidosRecorrentesModel');
-const usuariosModel = require('../model/usuariosModel');
-const { enviarEmail } = require('./email');
-const { montarEmailHtml } = require('./emailTemplate');
-const { notificarResponsaveis } = require('./emailsPais');
+const professoresModel = require('../model/professoresModel');
+const db = require('../config/banco');
 
 function hojeStr() {
     const agora = new Date(); // fuso do servidor = America/Sao_Paulo (definido no index.js)
@@ -70,78 +68,31 @@ async function gerarPedidosRecorrentesDoDia() {
 }
 
 // --------------------------------------------------------
-// 2) Alerta de atraso no retorno -> secretaria e portaria
+// 2) Alertas por e-mail e comunicados do professor
 // --------------------------------------------------------
-async function alertarEscolaSobreAtrasos() {
-    const atrasados = await pedidosModel.buscarAtrasadosParaAlerta();
-    if (atrasados.length === 0) return;
-
-    const destinatarios = await usuariosModel.listarEmailsPorPapel('SECRETARIA', 'PORTEIRO', 'PORTARIA');
-    if (destinatarios.length === 0) {
-        console.warn('[agendador] Há pedidos atrasados, mas nenhum usuário de SECRETARIA/PORTARIA tem e-mail cadastrado.');
-    }
-
-    for (const pedido of atrasados) {
-        const horaPrevista = new Date(pedido.hora_prevista_retorno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
-
-        if (destinatarios.length > 0) {
-            const html = montarEmailHtml({
-                titulo: 'Aluno com retorno em atraso',
-                saudacao: 'Atenção:',
-                paragrafos: [
-                    `O aluno <strong>${pedido.nome_aluno}</strong>${pedido.turma ? ` (turma ${pedido.turma})` : ''} não retornou até o horário previsto.`,
-                ],
-                destaque: `<p style="margin: 0; color: #2d3748; font-size: 13px;"><strong>Retorno previsto:</strong> ${horaPrevista}</p>`,
-                cor: 'vermelho'
-            });
-
-            try {
-                await enviarEmail({
-                    to: destinatarios.map(d => d.email).join(','),
-                    subject: `Atraso no retorno - ${pedido.nome_aluno}`,
-                    text: `O aluno ${pedido.nome_aluno} não retornou até o horário previsto (${horaPrevista}).`,
-                    html
-                });
-            } catch (erroEmail) {
-                console.error('[agendador] Erro ao enviar alerta de atraso por e-mail:', erroEmail.message);
-                continue; // não marca como enviado; tenta de novo no próximo ciclo
-            }
-        }
-
-        await pedidosModel.marcarAlertaEnviado(pedido.pedidos_saida_id);
-    }
-}
-
-// --------------------------------------------------------
-// 3) "Aluno não voltou" -> e-mail para os pais
-// --------------------------------------------------------
-async function avisarPaisQueNaoVoltou() {
-    const pedidos = await pedidosModel.buscarNaoRetornaramParaPais();
-
-    for (const pedido of pedidos) {
-        const r = await notificarResponsaveis(pedido.pedidos_saida_id, 'NAO_RETORNOU');
-        // Marca como avisado se enviou para todos, ou se não há ninguém com e-mail
-        // (evita ficar tentando para sempre). Se houve falha, tenta de novo no próximo ciclo.
-        if (r.falhas === 0) {
-            await pedidosModel.marcarAvisoPaisEnviado(pedido.pedidos_saida_id);
-        }
-    }
-}
-
+const { processarAlertas } = require('./alertasEmail');
 let verificandoAtrasos = false;
+
+// Os comunicados são gravados mesmo quando o Brevo está indisponível.
+async function avisarProfessoresSobreAtrasos() {
+    const atrasados = await pedidosModel.listarEmAtrasoParaProfessor();
+    for (const pedido of atrasados) {
+        await professoresModel.registrarEvento(db, pedido.pedidos_saida_id, 'ATRASADO');
+        if (pedido.nao_retornou) {
+            await professoresModel.registrarEvento(db, pedido.pedidos_saida_id, 'NAO_RETORNOU');
+        }
+    }
+}
 
 async function verificarAtrasos() {
     if (verificandoAtrasos) return;
     verificandoAtrasos = true;
     try {
-        await alertarEscolaSobreAtrasos();
-    } catch (error) {
-        console.error('[agendador] Erro no alerta de atraso para a escola:', error);
-    }
-    try {
-        await avisarPaisQueNaoVoltou();
-    } catch (error) {
-        console.error('[agendador] Erro ao avisar os pais sobre aluno que não voltou:', error);
+        try { await avisarProfessoresSobreAtrasos(); }
+        catch (erro) { console.error('[agendador] Falha nos comunicados dos professores:', erro); }
+        await processarAlertas();
+    } catch (erro) {
+        console.error('[agendador] Erro ao processar alertas por e-mail:', erro);
     } finally {
         verificandoAtrasos = false;
     }
@@ -156,7 +107,9 @@ function iniciarAgendador() {
     gerarPedidosRecorrentesDoDia();
     setInterval(gerarPedidosRecorrentesDoDia, 5 * 60 * 1000);
 
-    // Atrasos / aluno que não voltou: verifica a cada 1 minuto.
+    // Atraso (+5 min), não retorno (+15 min) e chegada atrasada: a cada minuto.
+    // Em produção, validar a migration de alertas antes de iniciar o servidor.
+    verificarAtrasos();
     setInterval(verificarAtrasos, 60 * 1000);
 
     console.log('[agendador] Rotinas de pedidos recorrentes e alerta de atraso iniciadas.');

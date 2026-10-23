@@ -24,42 +24,43 @@ async function cadastrar(aluno_id, nome_aluno, turma_id, solicitante_id, hora_pr
 // Atualizar status de um pedido (aprovar / rejeitar / liberar / retorno)
 // Também grava, na mesma operação, o registro correspondente no histórico imutável
 async function atualizarStatus(pedido_id, statusNovo, usuario_id, observacao = null) {
-    // 1. Descobre o status atual, para registrar a transição completa no histórico
-    const [pedidoAtual] = await db.query(
-        'SELECT status FROM pedidos_saida WHERE pedidos_saida_id = ?',
-        [pedido_id]
-    );
-    if (pedidoAtual.length === 0) {
-        return false; // pedido não existe
-    }
-    const statusAnterior = pedidoAtual[0].status;
-
-    let camposExtras = '';
-    // Registra a hora real de saída na portaria
-    if (statusNovo === 'EM_SAIDA') {
-        camposExtras = ', hora_saida_real = NOW()';
-    }
-    // Registra a hora real de retorno na portaria
-    else if (statusNovo === 'CONCLUIDA') {
-        camposExtras = ', hora_retorno_real = NOW()';
-    }
-
-    // 2. Atualiza o pedido
-    const [result] = await db.query(
-        `UPDATE pedidos_saida
-         SET status = ?, usuario_id = ?, observacao = ?${camposExtras}, data_atualizacao = NOW()
-         WHERE pedidos_saida_id = ?`,
-        [statusNovo, usuario_id, observacao, pedido_id]
-    );
-
-    if (result.affectedRows === 0) {
-        return false;
-    }
-
-    // 3. Grava a transição no histórico imutável
-    await historico.registrar(pedido_id, usuario_id, statusAnterior, statusNovo, observacao);
-
-    return true;
+    const transicoes = {
+        APROVADA: 'PENDENTE', RECUSADA: 'PENDENTE',
+        EM_SAIDA: 'APROVADA', CONCLUIDA: 'EM_SAIDA', CANCELADA: 'APROVADA'
+    };
+    const anteriorEsperado = transicoes[statusNovo];
+    if (!anteriorEsperado) throw new Error('Transição de status desconhecida.');
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        // FOR UPDATE evita aprovações/saídas simultâneas e duplicações de comunicados.
+        const [atuais] = await conn.query('SELECT status FROM pedidos_saida WHERE pedidos_saida_id = ? FOR UPDATE', [pedido_id]);
+        if (!atuais.length) { await conn.rollback(); return false; }
+        if (atuais[0].status !== anteriorEsperado) {
+            await conn.rollback(); const e = new Error('O pedido mudou de situação. Atualize a lista.'); e.status = 409; throw e;
+        }
+        const extras = statusNovo === 'EM_SAIDA' ? ', hora_saida_real = NOW()'
+            : statusNovo === 'CONCLUIDA' ? ', hora_retorno_real = NOW()' : '';
+        await conn.query(`UPDATE pedidos_saida SET status = ?, usuario_id = ?, observacao = ?,
+          data_atualizacao = NOW()${extras} WHERE pedidos_saida_id = ?`,
+        [statusNovo, usuario_id, observacao, pedido_id]);
+        await conn.query(`INSERT INTO historico_pedidos
+          (pedido_id, usuario_id, status_anterior, status_novo, observacao)
+          VALUES (?, ?, ?, ?, ?)`, [pedido_id, usuario_id, anteriorEsperado, statusNovo, observacao]);
+        // Ao registrar retorno atrasado, preserva a ordem lógica: atraso primeiro,
+        // retorno por último. Se o agendador já avisou, UNIQUE impede duplicação.
+        if (statusNovo === 'CONCLUIDA') {
+            const [atraso] = await conn.query(`SELECT
+              (hora_prevista_retorno IS NOT NULL AND hora_retorno_real > DATE_ADD(hora_prevista_retorno, INTERVAL 5 MINUTE)) AS passou_cinco
+              FROM pedidos_saida WHERE pedidos_saida_id = ?`, [pedido_id]);
+            if (atraso[0]?.passou_cinco) await require('./professoresModel').registrarEvento(conn, pedido_id, 'ATRASADO');
+        }
+        const tipoAviso = { APROVADA: 'APROVADA', EM_SAIDA: 'SAIDA', CONCLUIDA: 'RETORNO' }[statusNovo];
+        if (tipoAviso) await require('./professoresModel').registrarEvento(conn, pedido_id, tipoAviso);
+        await conn.commit();
+        return true;
+    } catch (err) { await conn.rollback(); throw err; }
+    finally { conn.release(); }
 }
 
 // Base do SELECT usada nas buscas de pedidos, já com os JOINs necessários
@@ -123,7 +124,7 @@ async function buscarHistorico(pedido_id) {
 // (recusa, cancelamento, saída, retorno).
 async function buscarParaNotificacao(pedido_id) {
     const sql = `
-        SELECT p.pedidos_saida_id, p.aluno_id, p.solicitante_id, p.nome_aluno,
+        SELECT p.pedidos_saida_id, p.status, p.aluno_id, p.turma_id, p.solicitante_id, p.nome_aluno,
                p.hora_prevista_saida, p.hora_prevista_retorno, p.hora_saida_real, p.hora_retorno_real,
                t.sala_turma AS turma,
                sol.nome AS responsavel_nome, sol.email AS responsavel_email
@@ -176,6 +177,15 @@ async function obterStatus(pedido_id) {
 
 // Pedidos com aluno em saída (EM_SAIDA), com horário previsto de retorno já
 // passado há mais de 5 minutos, que ainda não geraram alerta.
+async function listarEmAtrasoParaProfessor() {
+    const [rows] = await db.query(`SELECT pedidos_saida_id,
+      (NOW() > DATE_ADD(hora_prevista_retorno, INTERVAL 15 MINUTE)) AS nao_retornou
+      FROM pedidos_saida WHERE status = 'EM_SAIDA' AND hora_prevista_retorno IS NOT NULL
+      AND NOW() > DATE_ADD(hora_prevista_retorno, INTERVAL 5 MINUTE)
+      AND hora_prevista_retorno >= DATE_SUB(NOW(), INTERVAL 1 DAY)`);
+    return rows;
+}
+
 async function buscarAtrasadosParaAlerta() {
     const sql = `
         SELECT p.pedidos_saida_id, p.nome_aluno, p.hora_prevista_retorno,
@@ -300,6 +310,6 @@ module.exports = {
     cadastrar, atualizarStatus, buscarPorStatus, buscarPorSolicitante, buscarHistorico,
     buscarParaNotificacao, buscarDestinatariosPais, obterStatus, buscarAtrasadosParaAlerta, buscarAtrasados,
     buscarNaoRetornaramParaPais, marcarAvisoPaisEnviado, buscarHistoricoGeral,
-    marcarAlertaEnviado, obterEstatisticas
+    marcarAlertaEnviado, obterEstatisticas, listarEmAtrasoParaProfessor
 };
 
