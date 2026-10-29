@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professores e Turmas - Administração</title><link rel="shortcut icon" href="./img/logo_pi.png">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="./css/global.css?v=4" rel="stylesheet"><link href="./css/home.css?v=6" rel="stylesheet">
+  <link href="./css/secretaria.css?v=5" rel="stylesheet"><link href="./css/professor.css?v=1" rel="stylesheet">
+</head>
+<body><div id="particles-js"></div>
+<nav class="navbar"><div class="logo"><a href="secretaria.html"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a></div></nav>
+<main class="main-content" style="margin-left:0;max-width:1000px;margin:auto">
+  <a href="secretaria.html" style="display:inline-block;margin-bottom:14px">← Voltar ao painel</a>
+  <h1>Professores e Turmas</h1>
+  <div class="card"><h2>Cadastrar professor</h2><p class="descricao-tela">O professor acessa com e-mail e senha próprios. Selecione uma ou mais turmas (ou vincule depois).</p>
+    <form id="formProfessor" class="form-grid">
+      <div class="input-group"><label for="nomeProf">Nome completo</label><input id="nomeProf" maxlength="150" required></div>
+      <div class="input-group"><label for="cpfProf">CPF (11 números)</label><input id="cpfProf" inputmode="numeric" maxlength="14" required></div>
+      <div class="input-group"><label for="emailProf">E-mail</label><input type="email" id="emailProf" maxlength="150" required></div>
+      <div class="input-group"><label for="telProf">Telefone (opcional)</label><input id="telProf" maxlength="20"></div>
+      <div class="input-group"><label for="senhaProf">Senha inicial (mínimo 8 caracteres)</label><input type="password" id="senhaProf" minlength="8" maxlength="72" required autocomplete="new-password"></div>
+      <div class="input-group full-width"><label for="turmasProf">Turmas (Ctrl/Cmd + clique para múltiplas)</label><select id="turmasProf" multiple size="5" class="filter-select" style="width:100%"></select></div>
+      <div class="input-group full-width"><button class="btn-submit" type="submit">Cadastrar professor</button></div>
+    </form>
+    <p id="msgCadastro" role="status"></p>
+  </div>
+  <div class="card"><h2>Professores cadastrados</h2><p class="descricao-tela">Edite os vínculos sem mudar os dados dos alunos. As salas disponíveis são as turmas já cadastradas na secretaria.</p>
+    <div class="table-responsive"><table class="history-table"><thead><tr><th>Professor</th><th>E-mail</th><th>Situação</th><th>Turmas</th><th>Ação</th></tr></thead><tbody id="listaProfessores"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>
+  </div>
+</main><script src="./js/general/sessao.js?v=1"></script><script src="./js/general/professores-admin.js?v=1"></script></body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professor - Portaria Inteligente</title>
+    <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="./css/global.css?v=4" rel="stylesheet">
+    <link href="./css/home.css?v=6" rel="stylesheet">
+    <link href="./css/secretaria.css?v=5" rel="stylesheet">
+    <link href="./css/professor.css?v=1" rel="stylesheet">
+</head>
+<body>
+    <div id="particles-js"></div>
+    <nav class="navbar">
+        <div class="menu-toggle" id="menuToggle"><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+        <div class="logo"><a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a></div>
+        <button id="themeToggle" aria-label="Alternar tema" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;margin-right:20px;"><i class="fas fa-moon"></i></button>
+    </nav>
+    <aside class="sidebar" id="sidebar"><ul class="nav-links">
+        <li><a href="#" onclick="mostrarTela('tela-painel')"><i class="fas fa-chalkboard-user"></i> Minhas Turmas</a></li>
+        <li><a href="#" onclick="mostrarTela('tela-comunicados')"><i class="fas fa-bell"></i> Comunicados <span id="contadorMenu" class="notificacao-contador">0</span></a></li>
+        <li><a href="conta.html"><i class="fas fa-user"></i> Minha Conta</a></li>
+        <li id="trocarPainel" style="display:none;"><a href="selecionar-painel.html"><i class="fas fa-arrow-right-arrow-left"></i> Trocar Painel</a></li>
+        <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+    </ul></aside>
+    <main class="main-content" id="mainContent">
+        <section id="tela-painel">
+            <h1>Painel do Professor</h1>
+            <div class="card"><h2>Situação dos alunos</h2><p class="descricao-tela">Acompanhamento das suas turmas. A secretaria autoriza as saídas; a portaria registra a movimentação. Atualização automática a cada 15 segundos.</p>
+                <div id="resumoProfessor" class="resumo-grid"></div>
+                <div class="filter-area"><label for="filtroTurmaPainel">Turma:</label><select id="filtroTurmaPainel" class="filter-select"><option value="">Todas as minhas turmas</option></select></div>
+                <div class="table-responsive"><table class="history-table"><thead><tr><th>Aluno</th><th>Turma</th><th>Situação atual</th><th>Última saída</th><th>Retorno previsto</th><th>Último retorno</th></tr></thead><tbody id="tabelaPainel"><tr><td colspan="6">Carregando...</td></tr></tbody></table></div>
+            </div>
+        </section>
+        <section id="tela-comunicados" style="display:none;">
+            <h1>Comunicados <span id="contadorPagina" class="notificacao-contador">0</span></h1>
+            <div class="card">
+                <p class="descricao-tela">Avisos de aprovação, saída, retorno, atraso e não retorno. Histórico mais recente primeiro.</p>
+                <div class="filter-area filtros-professor">
+                    <label for="filtroTurmaCom">Turma:</label><select id="filtroTurmaCom" class="filter-select"><option value="">Todas</option></select>
+                    <label for="filtroAlunoCom">Aluno:</label><select id="filtroAlunoCom" class="filter-select"><option value="">Todos</option></select>
+                    <label for="filtroTipoCom">Tipo:</label><select id="filtroTipoCom" class="filter-select">
+                        <option value="">Todos</option><option value="APROVADA">Aprovada</option><option value="SAIDA">Saída</option>
+                        <option value="RETORNO">Retorno</option><option value="ATRASADO">Atrasado</option><option value="NAO_RETORNOU">Não voltou</option>
+                    </select>
+                    <label for="filtroDataCom">Data:</label><input type="date" id="filtroDataCom" class="filter-select">
+                    <button type="button" class="btn-professor" id="limparFiltros">Limpar</button>
+                </div>
+                <div class="table-responsive"><table class="history-table"><thead><tr><th>Data/Hora</th><th>Aluno</th><th>Turma</th><th>Comunicado</th><th>Leitura</th><th>Ação</th></tr></thead><tbody id="tabelaComunicados"><tr><td colspan="6">Carregando...</td></tr></tbody></table></div>
+                <div class="filtros-professor"><button id="paginaAnterior" class="btn-professor" type="button">← Anterior</button><span id="numeroPagina">Página 1</span><button id="paginaProxima" class="btn-professor" type="button">Próxima →</button></div>
+            </div>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="./js/general/sessao.js?v=1"></script>
+    <script src="./js/general/professor.js?v=1"></script>
+</body>
+</html>
