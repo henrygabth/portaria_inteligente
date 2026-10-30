@@ -26,36 +26,7 @@ function mostrarTela(idTela) {
     }
 }
 
-function iniciarParticulas(theme) {
-    if (window.pJSDom && window.pJSDom.length > 0) {
-        window.pJSDom.forEach(dom => dom.pJS.fn.vendors.destroypJS());
-        window.pJSDom = [];
-    }
-
-    const corLinha = theme === 'dark' ? '#FFFFFF' : '#0A192F';
-
-    if (typeof particlesJS !== 'undefined') {
-        particlesJS("particles-js", {
-            "particles": {
-                "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#0052cc" },
-                "shape": { "type": "circle" },
-                "opacity": { "value": 0.5 },
-                "size": { "value": 3, "random": true },
-                "line_linked": {
-                    "enable": true,
-                    "distance": 150,
-                    "color": corLinha,
-                    "opacity": 0.2,
-                    "width": 1
-                },
-                "move": { "enable": true, "speed": 2 }
-            },
-            "retina_detect": true
-        });
-    }
-}
-
+// As partículas de fundo vêm do js/general/particulas.js (igual em todas as telas).
 function aplicarTema(theme) {
     const themeToggle = document.getElementById('themeToggle');
     const themeIcon = themeToggle ? themeToggle.querySelector('i') : null;
@@ -407,6 +378,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     aplicarTema(savedTheme);
+
+    // Links da sidebar das telas avulsas (ex.: professores-admin.html -> secretaria.html?tela=tela-painel)
+    const telaPedida = new URLSearchParams(window.location.search).get('tela');
+    if (telaPedida && document.getElementById(telaPedida)) mostrarTela(telaPedida);
 
     document.getElementById('filtroPortaria')?.addEventListener('change', renderizarHistoricoPortaria);
 

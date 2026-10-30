@@ -44,6 +44,8 @@ test('notifica todos os quatro grupos e não duplica e-mails', async () => {
 
 test('cada evento usa a chave única por pedido, tipo e destinatário', async () => {
     gravados.length = 0;
+    for (const tipo of ['SAIDA', 'RETORNO']) assert.equal(await alertas.enfileirar(88, tipo), 6);
+    gravados.length = 0;
     const qtd = await alertas.enfileirar(88, 'NAO_RETORNOU');
     assert.equal(qtd, 6);
     const ins = gravados.filter(x => x.sql.includes('INSERT IGNORE INTO alertas_email_envios'));

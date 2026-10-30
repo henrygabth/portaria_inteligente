@@ -84,6 +84,7 @@ document.getElementById('formConta').addEventListener('submit', async (e) => {
         }
 
         alert('Dados atualizados com sucesso!');
+        if (corpo.novaSenha) { try { localStorage.removeItem('sugerirTrocaSenha'); } catch (_) { /* sem storage */ } }
 
         // Limpa os campos de senha após salvar
         document.getElementById('senhaAtual').value = '';

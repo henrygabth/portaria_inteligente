@@ -13,7 +13,7 @@ Atualmente, o controle de saída de alunos em muitas escolas ainda é feito de f
 2. A **Secretaria** analisa e **aprova ou recusa** a solicitação.
 3. O **Professor** recebe comunicados sobre aprovação, saída, retorno, atraso e não retorno dos alunos das turmas às quais está vinculado.
 4. A **Portaria não aprova nem recusa**: apenas registra a saída de um pedido já aprovado e, depois, o retorno do aluno.
-5. Em atraso (+5 min) ou não retorno (+15 min), o sistema avisa por e-mail **responsáveis, secretaria, professores da turma e portaria** e registra a rastreabilidade dos avisos.
+5. **Tudo o que acontece é comunicado por e-mail** a **responsáveis, secretaria, professores da turma e portaria**: saída, retorno no horário, retorno com atraso (+5 min), atraso sem retorno (+5 min) e não retorno (+15 min). Os envios passam por uma fila no banco (`alertas_email_envios`), um e-mail individual por pessoa, sem duplicar, e a rastreabilidade dos avisos de atraso fica registrada.
 
 > Os limites de 5 e 15 minutos são parâmetros operacionais adotados nesta versão e devem ser validados com a escola. Consulte `VALIDACAO_FLUXO_IVONE.md`.
 
@@ -34,7 +34,8 @@ Atualmente, o controle de saída de alunos em muitas escolas ainda é feito de f
 - Registro de saída e retorno na portaria, sem poder de aprovação/recusa
 - Perfil de professor com escopo por turma
 - Comunicados ao professor sobre aprovação, saída, retorno, atraso e não retorno
-- Alertas de atraso/não retorno para responsáveis, secretaria, professores e portaria
+- E-mails de saída, retorno, atraso e não retorno para responsáveis, secretaria, professores e portaria
+- Visual padronizado: mesma navbar/sidebar e fundo de pontinhos animados (`particulas.js`) em todas as telas
 - Rastreabilidade dos alertas enviados e das ocorrências automáticas
 - Histórico de pedidos e saídas
 

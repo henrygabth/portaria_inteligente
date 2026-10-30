@@ -18,7 +18,7 @@ simularModulo('model/responsaveisAlunosModel.js', {});
 simularModulo('model/ocorrenciasModel.js', { listarAuditoria: async () => ({ ocorrencias: [], envios: [] }) });
 simularModulo('utils/email.js', { enviarEmail: async () => {} });
 simularModulo('utils/emailTemplate.js', { montarEmailHtml: () => '' });
-simularModulo('utils/emailsPais.js', { notificarResponsaveis: async () => ({}) });
+simularModulo('utils/alertasEmail.js', { avisarTodos: async () => {}, retornouAtrasado: () => false });
 const ctl = require(path.join(raiz, 'controller/pedidosController.js'));
 function resposta() {
     return { code:200, dados:null, status(c){this.code=c;return this;}, json(d){this.dados=d;return this;} };

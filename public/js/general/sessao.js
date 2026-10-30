@@ -25,6 +25,8 @@
         let pendente = false;
         try { pendente = localStorage.getItem('sugerirTrocaSenha') === '1'; } catch (_) { /* sem storage */ }
         if (!pendente || !localStorage.getItem('token')) return;
+        // Na própria tela "Minha Conta" não faz sentido sugerir ir para ela.
+        if (/conta\.html$/.test(window.location.pathname)) return;
 
         const estilo = document.createElement('style');
         estilo.textContent = `

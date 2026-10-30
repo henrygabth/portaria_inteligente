@@ -22,11 +22,14 @@ async function consultarProf(caminho, opcoes = {}) {
 function mostrarTela(id) {
     telaAtual = id;
     for (const tela of ['tela-painel', 'tela-comunicados']) document.getElementById(tela).style.display = tela === id ? 'block' : 'none';
-    document.getElementById('sidebar')?.classList.remove('open');
-    document.getElementById('menuToggle')?.classList.remove('active');
+    // Igual aos outros painéis: no celular o menu fecha ao escolher uma tela; no computador continua aberto.
+    if (window.innerWidth <= 768) {
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('menuToggle')?.classList.remove('active');
+        document.getElementById('mainContent')?.classList.remove('shifted');
+    }
     atualizarProfessor();
 }
-function logout() { localStorage.removeItem('token'); localStorage.removeItem('usuario'); location.href = 'login.html'; }
 function popularTurmas() {
     for (const id of ['filtroTurmaPainel', 'filtroTurmaCom']) {
         const select = document.getElementById(id);
@@ -92,22 +95,17 @@ async function marcarLido(id) {
     try { await consultarProf(`/comunicados/${id}/lido`, { method: 'PUT' }); await carregarComunicados(); }
     catch (err) { alert(err.message); }
 }
-function atualizarProfessor() { if (telaAtual === 'tela-painel') carregarPainel(); carregarComunicados(); }
+// O painel carrega sempre: ele também alimenta o filtro de alunos da tela de comunicados.
+function atualizarProfessor() { carregarPainel(); carregarComunicados(); }
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (!tokenProfessor()) { location.href = 'login.html'; return; }
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-    if (!['PROFESSOR','ADMIN'].includes((usuario.tipo_usuario || '').toUpperCase())) { location.href = 'login.html'; return; }
-    if (usuario.tipo_usuario === 'ADMIN') document.getElementById('trocarPainel').style.display = 'block';
-    const menu = document.getElementById('menuToggle');
-    menu.addEventListener('click', () => { menu.classList.toggle('active'); document.getElementById('sidebar').classList.toggle('open'); });
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        const tema = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        if (tema === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        else document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('theme', tema);
-    });
-    if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme','dark');
+    // As rotas do professor só aceitam o perfil PROFESSOR; o ADMIN gerencia professores em "Professores e Turmas".
+    const tipo = (usuario.tipo_usuario || '').toUpperCase();
+    if (tipo === 'ADMIN') { location.href = 'selecionar-painel.html'; return; }
+    if (tipo !== 'PROFESSOR') { location.href = 'login.html'; return; }
+    // Menu, tema, logout e fundo de pontinhos vêm do layout.js e do particulas.js (padrão de todas as telas).
     for (const id of ['filtroTurmaPainel','filtroTurmaCom','filtroAlunoCom','filtroTipoCom','filtroDataCom']) {
         document.getElementById(id).addEventListener('change', () => {
             if (id === 'filtroTurmaCom') atualizarFiltroAlunos();
@@ -128,6 +126,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     try { turmas = await consultarProf('/minhas-turmas'); popularTurmas(); }
     catch (err) { alert(err.message); }
-    atualizarProfessor();
+    const telaPedida = new URLSearchParams(location.search).get('tela');
+    if (['tela-painel', 'tela-comunicados'].includes(telaPedida)) mostrarTela(telaPedida);
+    else atualizarProfessor();
     setInterval(() => { if (!document.hidden) atualizarProfessor(); }, 15000);
 });

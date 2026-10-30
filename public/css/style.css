@@ -1,5 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap');
 
+/* Fundo de pontinhos animados (particulas.js) nas telas de login/cadastro/conta:
+   fica atrás do formulário e não captura cliques. */
+#particles-js {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+
 body {
     height: 100vh;
     margin: 0;

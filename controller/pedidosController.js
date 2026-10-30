@@ -4,7 +4,7 @@ const alunosModel = require('../model/alunosModel');
 const responsaveisAlunosModel = require('../model/responsaveisAlunosModel');
 const { enviarEmail } = require('../utils/email');
 const { montarEmailHtml } = require('../utils/emailTemplate');
-const { notificarResponsaveis } = require('../utils/emailsPais');
+const { avisarTodos, retornouAtrasado } = require('../utils/alertasEmail');
 const ocorrenciasModel = require('../model/ocorrenciasModel');
 
 // Garante que o pedido está no status esperado antes de seguir para a próxima etapa
@@ -151,10 +151,10 @@ const pedidosController = {
             const ok = await pedidos.atualizarStatus(pedido_id, 'EM_SAIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
 
-            // Avisa os responsáveis sem segurar a resposta da portaria
-            notificarResponsaveis(pedido_id, 'SAIDA');
+            // Avisa responsáveis, secretaria, portaria e professores da turma, sem segurar a resposta da portaria
+            avisarTodos(pedido_id, 'SAIDA');
 
-            res.json({ mensagem: "Saída registrada pela portaria. A autorização permanece vinculada à decisão da secretaria." });
+            res.json({ mensagem: "Saída registrada pela portaria. Responsáveis, secretaria, portaria e professores da turma serão avisados por e-mail. A autorização permanece vinculada à decisão da secretaria." });
         } catch (error) {
             console.error('Erro ao registrar saída:', error);
             res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao registrar saída" });
@@ -170,19 +170,13 @@ const pedidosController = {
             const ok = await pedidos.atualizarStatus(pedido_id, 'CONCLUIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
 
-            // Retorno no prazo: mantém o e-mail existente.
-            // Retorno atrasado: o agendador envia a TODOS via fila persistente
-            // (inclusive aos responsáveis), sem duplicar o e-mail ao responsável.
+            // Retorno no prazo ou com atraso: todos os grupos recebem o aviso correspondente.
             void (async () => {
                 const dados = await pedidos.buscarParaNotificacao(pedido_id);
-                if (!dados || !dados.hora_prevista_retorno || !dados.hora_retorno_real ||
-                    new Date(dados.hora_retorno_real).getTime() <=
-                        new Date(dados.hora_prevista_retorno).getTime() + 5 * 60 * 1000) {
-                    await notificarResponsaveis(pedido_id, 'RETORNO', dados);
-                }
+                await avisarTodos(pedido_id, retornouAtrasado(dados) ? 'CHEGOU_ATRASADO' : 'RETORNO');
             })().catch(e => console.error('[portaria] Falha ao preparar aviso de retorno:', e));
 
-            res.json({ mensagem: "Retorno do aluno registrado com sucesso! Os responsáveis serão avisados por e-mail." });
+            res.json({ mensagem: "Retorno do aluno registrado com sucesso! Responsáveis, secretaria, portaria e professores da turma serão avisados por e-mail." });
         } catch (error) {
             console.error('Erro ao registrar retorno do aluno:', error);
             res.status(error.status === 409 ? 409 : 500).json({ erro: "Erro ao registrar retorno do aluno" });

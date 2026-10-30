@@ -1,57 +1,88 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Conta - Controle de Saídas</title>
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
-    <link rel="stylesheet" type="text/css" href="./css/style.css?v=4">
-    <script src="./js/general/conta.js?v=2" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="./css/global.css?v=4" rel="stylesheet">
+    <link href="./css/home.css?v=7" rel="stylesheet">
+    <script src="./js/general/particulas.js?v=1"></script>
 </head>
-<body class="centralize">
-    <form id="formConta">
-        <h2>Meus Dados</h2>
 
-        <div class="form-field">
-            <label for="nomeResponsavel">Nome Completo</label>
-            <input type="text" id="nomeResponsavel" required />
-        </div>
+<body>
+    <div id="particles-js"></div>
 
-        <div class="form-field">
-            <label for="cpfResponsavel">CPF</label>
-            <input type="text" id="cpfResponsavel" disabled />
+    <nav class="navbar">
+        <div class="menu-toggle" id="menuToggle">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
         </div>
+        <div class="logo">
+            <a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a>
+        </div>
+        <button id="themeToggle" aria-label="Alternar tema"
+            style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 20px;">
+            <i class="fas fa-moon"></i>
+        </button>
+    </nav>
 
-        <div class="form-field">
-            <label for="emailResponsavel">E-mail</label>
-            <input type="email" id="emailResponsavel" required />
-        </div>
+    <!-- A sidebar é montada pelo layout.js conforme o perfil de quem está logado -->
+    <aside class="sidebar" id="sidebar" data-sidebar-auto></aside>
 
-        <div class="form-field">
-            <label for="telefoneResponsavel">Telefone</label>
-            <input type="tel" id="telefoneResponsavel" required />
-        </div>
+    <main class="main-content" id="mainContent">
+        <h1>Minha Conta</h1>
+        <div class="card">
+            <h2>Meus Dados</h2>
+            <p style="margin-bottom: 20px; color: #666;">Atualize suas informações de contato e segurança.</p>
 
-        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
-        <h3>Alterar Senha (Opcional)</h3>
+            <form id="formConta" class="form-grid">
+                <div class="input-group full-width">
+                    <label for="nomeResponsavel">Nome Completo</label>
+                    <input type="text" id="nomeResponsavel" required>
+                </div>
 
-        <div class="form-field">
-            <label for="senhaAtual">Senha Atual</label>
-            <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" />
-        </div>
+                <div class="input-group">
+                    <label for="cpfResponsavel">CPF</label>
+                    <input type="text" id="cpfResponsavel" disabled style="background-color: #f0f0f0; cursor: not-allowed;" title="O CPF não pode ser alterado pelo portal">
+                </div>
 
-        <div class="form-field">
-            <label for="novaSenha">Nova Senha</label>
-            <input type="password" id="novaSenha" placeholder="Digite a nova senha" />
-        </div>
+                <div class="input-group">
+                    <label for="telefoneResponsavel">Telefone / WhatsApp</label>
+                    <input type="tel" id="telefoneResponsavel" required>
+                </div>
 
-        <div>
-            <button type="submit" class="enter-btn">Salvar Alterações</button>
+                <div class="input-group full-width">
+                    <label for="emailResponsavel">E-mail</label>
+                    <input type="email" id="emailResponsavel" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="senhaAtual">Senha Atual</label>
+                    <input type="password" id="senhaAtual" placeholder="Digite para confirmar mudanças" autocomplete="current-password">
+                </div>
+
+                <div class="input-group">
+                    <label for="novaSenha">Nova Senha</label>
+                    <input type="password" id="novaSenha" placeholder="Deixe em branco para manter" autocomplete="new-password">
+                </div>
+
+                <div class="form-actions full-width" style="margin-top: 10px;">
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
         </div>
-        <div>
-            <button type="button" class="clear" onclick="history.back()">Voltar</button>
-        </div>
-    </form>
+    </main>
+
+    <script src="./js/general/sessao.js?v=2"></script>
+    <script src="./js/general/layout.js?v=2"></script>
+    <script src="./js/general/conta.js?v=3"></script>
     <script src="./js/general/ui-extras.js?v=1" defer></script>
 </body>
+
 </html>

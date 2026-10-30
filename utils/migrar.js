@@ -212,7 +212,7 @@ async function migrar() {
             `CREATE TABLE alertas_email_envios (
                 envio_id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 pedido_id INT NOT NULL,
-                tipo_evento ENUM('ATRASADO','NAO_RETORNOU','CHEGOU_ATRASADO') NOT NULL,
+                tipo_evento ENUM('SAIDA','RETORNO','ATRASADO','NAO_RETORNOU','CHEGOU_ATRASADO') NOT NULL,
                 email_destino VARCHAR(150) NOT NULL,
                 categoria ENUM('RESPONSAVEL','SECRETARIA','PORTARIA','PROFESSOR') NOT NULL,
                 status ENUM('PENDENTE','ENVIANDO','ENVIADO','DESCARTADO') NOT NULL DEFAULT 'PENDENTE',
@@ -230,7 +230,7 @@ async function migrar() {
             `CREATE TABLE alertas_email_envios (
                 envio_id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 pedido_id INT NOT NULL,
-                tipo_evento ENUM('ATRASADO','NAO_RETORNOU','CHEGOU_ATRASADO') NOT NULL,
+                tipo_evento ENUM('SAIDA','RETORNO','ATRASADO','NAO_RETORNOU','CHEGOU_ATRASADO') NOT NULL,
                 email_destino VARCHAR(150) NOT NULL,
                 categoria ENUM('RESPONSAVEL','SECRETARIA','PORTARIA','PROFESSOR') NOT NULL,
                 status ENUM('PENDENTE','ENVIANDO','ENVIADO','DESCARTADO') NOT NULL DEFAULT 'PENDENTE',
@@ -244,6 +244,18 @@ async function migrar() {
                 KEY idx_alertas_pendentes (status, atualizado_em),
                 KEY idx_alertas_tipo_pedido (tipo_evento, pedido_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+
+        // Instalações anteriores só tinham os tipos de atraso na fila de e-mails.
+        // Agora saída e retorno também avisam todos os grupos.
+        const tipoAlerta = await colunaInfo('alertas_email_envios', 'tipo_evento');
+        if (tipoAlerta) {
+            const tipo = String(tipoAlerta.COLUMN_TYPE || '').toUpperCase();
+            if (!tipo.includes("'SAIDA'") || !tipo.includes("'RETORNO'")) {
+                await db.query(`ALTER TABLE alertas_email_envios MODIFY COLUMN tipo_evento
+                    ENUM('SAIDA','RETORNO','ATRASADO','NAO_RETORNOU','CHEGOU_ATRASADO') NOT NULL`);
+                console.log('[migrar] alertas_email_envios.tipo_evento atualizado com SAIDA e RETORNO.');
+            }
+        }
 
         await criarTabelaSePreciso('ocorrencias_pedidos',
             `CREATE TABLE ocorrencias_pedidos (

@@ -14,3 +14,5 @@
 [data-theme="dark"] .prof-aviso{background:#263449;color:#e2e8f0}
 [data-theme="dark"] .comunicado-novo{background:rgba(0,82,204,.17)}
 @media(max-width:768px){.filtros-professor{align-items:stretch}.filtros-professor .filter-select{flex:1;max-width:none}}
+#msgCadastro:not(:empty){margin-top:12px;font-weight:600;color:var(--primary-blue)}
+.input-group select.filter-select{width:100%}

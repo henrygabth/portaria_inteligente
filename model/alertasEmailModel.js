@@ -3,7 +3,9 @@
 const db = require('../config/banco');
 const pedidosModel = require('./pedidosModel');
 
-const TIPOS = ['ATRASADO', 'NAO_RETORNOU', 'CHEGOU_ATRASADO'];
+// SAIDA e RETORNO são avisos de movimentação normal (enfileirados na hora pelo controller).
+// ATRASADO, NAO_RETORNOU e CHEGOU_ATRASADO são detectados pelo agendador (listarEventosRecentes).
+const TIPOS = ['SAIDA', 'RETORNO', 'ATRASADO', 'NAO_RETORNOU', 'CHEGOU_ATRASADO'];
 
 // Somente eventos recentes: evita disparar alertas antigos quando o servidor volta.
 async function listarEventosRecentes() {
@@ -87,7 +89,7 @@ async function listarEnviosPendentes() {
         AND ((status = 'PENDENTE' AND
               (tentativas = 0 OR atualizado_em < DATE_SUB(NOW(), INTERVAL 2 MINUTE)))
              OR (status = 'ENVIANDO' AND bloqueado_em < DATE_SUB(NOW(), INTERVAL 5 MINUTE)))
-      ORDER BY criado_em ASC, envio_id ASC LIMIT 20`);
+      ORDER BY criado_em ASC, envio_id ASC LIMIT 60`);
     return rows;
 }
 

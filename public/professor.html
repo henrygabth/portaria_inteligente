@@ -7,22 +7,22 @@
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="./css/global.css?v=4" rel="stylesheet">
-    <link href="./css/home.css?v=6" rel="stylesheet">
+    <link href="./css/home.css?v=7" rel="stylesheet">
     <link href="./css/secretaria.css?v=5" rel="stylesheet">
-    <link href="./css/professor.css?v=1" rel="stylesheet">
+    <link href="./css/professor.css?v=2" rel="stylesheet">
+    <script src="./js/general/particulas.js?v=1"></script>
 </head>
 <body>
     <div id="particles-js"></div>
     <nav class="navbar">
         <div class="menu-toggle" id="menuToggle"><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
         <div class="logo"><a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a></div>
-        <button id="themeToggle" aria-label="Alternar tema" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;margin-right:20px;"><i class="fas fa-moon"></i></button>
+        <button id="themeToggle" aria-label="Alternar tema" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 20px;"><i class="fas fa-moon"></i></button>
     </nav>
     <aside class="sidebar" id="sidebar"><ul class="nav-links">
         <li><a href="#" onclick="mostrarTela('tela-painel')"><i class="fas fa-chalkboard-user"></i> Minhas Turmas</a></li>
         <li><a href="#" onclick="mostrarTela('tela-comunicados')"><i class="fas fa-bell"></i> Comunicados <span id="contadorMenu" class="notificacao-contador">0</span></a></li>
         <li><a href="conta.html"><i class="fas fa-user"></i> Minha Conta</a></li>
-        <li id="trocarPainel" style="display:none;"><a href="selecionar-painel.html"><i class="fas fa-arrow-right-arrow-left"></i> Trocar Painel</a></li>
         <li><a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
     </ul></aside>
     <main class="main-content" id="mainContent">
@@ -53,8 +53,8 @@
             </div>
         </section>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
-    <script src="./js/general/sessao.js?v=1"></script>
-    <script src="./js/general/professor.js?v=1"></script>
+    <script src="./js/general/sessao.js?v=2"></script>
+    <script src="./js/general/layout.js?v=2"></script>
+    <script src="./js/general/professor.js?v=2"></script>
 </body>
 </html>
