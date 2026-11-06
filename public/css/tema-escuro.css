@@ -1,0 +1,143 @@
+/* tema-escuro.css — modo escuro completo (carregar DEPOIS dos outros CSS).
+   Paleta: azul-marinho profundo, superfícies em camadas, azul da marca clareado para contraste. */
+[data-theme="dark"] {
+    --primary-blue: #3b82f6;
+    --dark-blue: #f1f5f9;          /* títulos e rótulos */
+    --bg-color: #0b1220;
+    --text-color: #dbe4f3;
+    --card-bg: #141d2f;
+    --input-bg: #0f1727;
+    --border-color: #2a3855;
+    --table-header: #1a2640;
+    --table-hover: #19243a;
+    --muted: #92a3c0;
+    --superficie-2: #1a2640;
+    color-scheme: dark;
+}
+
+/* ---------- estrutura ---------- */
+[data-theme="dark"] body { background-color: var(--bg-color) !important; color: var(--text-color); }
+[data-theme="dark"] #particles-js { background-color: var(--bg-color); }
+[data-theme="dark"] .navbar { background: linear-gradient(90deg, #0d2a63, #123c8f); box-shadow: 0 2px 12px rgba(0,0,0,.55); border-bottom: 1px solid #1d3a73; }
+[data-theme="dark"] .sidebar { background-color: #0f1727; border-right: 1px solid #1f2d48; box-shadow: 2px 0 12px rgba(0,0,0,.5); }
+[data-theme="dark"] .nav-links a { color: #b8c5de; }
+[data-theme="dark"] .nav-links a:hover,
+[data-theme="dark"] .nav-links a.ativo { background-color: rgba(59,130,246,.18); color: #fff; border-left-color: #60a5fa; }
+[data-theme="dark"] .card { background: var(--card-bg); border: 1px solid #22304b; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3 { color: #f1f5f9; }
+[data-theme="dark"] a { color: #7db3ff; }
+[data-theme="dark"] .nav-links a, [data-theme="dark"] .logo a { color: inherit; }
+[data-theme="dark"] .logo a { color: #fff; }
+[data-theme="dark"] .descricao-tela,
+[data-theme="dark"] .campo-ajuda,
+[data-theme="dark"] .situacao-detalhe,
+[data-theme="dark"] [style*="color: #666"],
+[data-theme="dark"] [style*="color:#666"] { color: var(--muted) !important; }
+[data-theme="dark"] [style*="color:#b42318"] { color: #ff8a7a !important; }
+[data-theme="dark"] [style*="border-bottom:1px solid #e5e7eb"] { border-bottom-color: #2a3855 !important; }
+
+/* ---------- campos ---------- */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea,
+[data-theme="dark"] .filter-select,
+[data-theme="dark"] .filter-input {
+    background-color: var(--input-bg); color: var(--text-color); border: 1px solid var(--border-color);
+}
+[data-theme="dark"] input::placeholder, [data-theme="dark"] textarea::placeholder { color: #61718f; }
+[data-theme="dark"] input:focus, [data-theme="dark"] select:focus, [data-theme="dark"] textarea:focus,
+[data-theme="dark"] .filter-select:focus, [data-theme="dark"] .filter-input:focus {
+    border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(59,130,246,.22); outline: none;
+}
+[data-theme="dark"] input:disabled, [data-theme="dark"] input[disabled] { background-color: #172138 !important; color: #7f90ae; }
+[data-theme="dark"] select option { background: #0f1727; color: var(--text-color); }
+[data-theme="dark"] input[type="date"], [data-theme="dark"] input[type="time"], [data-theme="dark"] input[type="datetime-local"] { color-scheme: dark; }
+[data-theme="dark"] .input-group label { color: #cfdaf0; }
+
+/* ---------- botões ---------- */
+[data-theme="dark"] .btn-submit, [data-theme="dark"] .btn-professor, [data-theme="dark"] .btn-retorno { background-color: #2563eb; color: #fff; }
+[data-theme="dark"] .btn-submit:hover, [data-theme="dark"] .btn-professor:hover, [data-theme="dark"] .btn-retorno:hover { background-color: #3b82f6; filter: none; }
+[data-theme="dark"] .btn-liberar { background-color: #16a34a; }
+[data-theme="dark"] .btn-liberar:hover { background-color: #22c55e; }
+[data-theme="dark"] .btn-toggle-recorrente { background: transparent; color: var(--text-color); border-color: var(--border-color); }
+[data-theme="dark"] .btn-toggle-recorrente:hover { background: #2563eb; border-color: #2563eb; color: #fff; }
+[data-theme="dark"] .btn-remover-recorrente, [data-theme="dark"] .btn-perfil.desativar { background: transparent; color: #ff8a7a; border-color: #ff8a7a; }
+[data-theme="dark"] .btn-remover-recorrente:hover, [data-theme="dark"] .btn-perfil.desativar:hover { background: #e5391f; color: #fff; border-color: #e5391f; }
+[data-theme="dark"] .btn-perfil.reativar { color: #7db3ff; border-color: #7db3ff; }
+[data-theme="dark"] .btn-perfil.reativar:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+[data-theme="dark"] .atalhos-dias button, [data-theme="dark"] .email-verificacao button { color: #7db3ff; }
+
+/* ---------- tabelas ---------- */
+[data-theme="dark"] .history-table th { background-color: var(--table-header); color: #c3d0e8; border-bottom: 1px solid var(--border-color); }
+[data-theme="dark"] .history-table td { border-bottom: 1px solid #222f4a; color: var(--text-color); }
+[data-theme="dark"] .history-table tbody tr:hover { background-color: var(--table-hover); }
+[data-theme="dark"] .history-table tbody tr.linha-atrasada { background-color: rgba(248,81,60,.13); }
+[data-theme="dark"] .turma-group-header td { background-color: #1a2640; color: #e2e9f6; }
+[data-theme="dark"] tr.perfil-desativado td { opacity: .55; }
+
+/* ---------- cartões de resumo ---------- */
+[data-theme="dark"] .resumo-card { background-color: #1a2640; border-left-color: #3b82f6; box-shadow: 0 2px 10px rgba(0,0,0,.3); }
+[data-theme="dark"] .resumo-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,.45); }
+[data-theme="dark"] .resumo-card h3 { color: #f8fafc; }
+[data-theme="dark"] .resumo-card p { color: var(--muted); }
+[data-theme="dark"] .resumo-icon { color: #60a5fa; }
+[data-theme="dark"] .resumo-card.card-pendente { border-left-color: #fbbf24; }
+[data-theme="dark"] .resumo-card.card-pendente .resumo-icon { color: #fbbf24; }
+[data-theme="dark"] .resumo-card.card-aprovado { border-left-color: #34d399; }
+[data-theme="dark"] .resumo-card.card-aprovado .resumo-icon { color: #34d399; }
+[data-theme="dark"] .resumo-card.card-atrasado { border-left-color: #f87171; }
+[data-theme="dark"] .resumo-card.card-atrasado h3, [data-theme="dark"] .resumo-card.card-atrasado .resumo-icon { color: #ff8a7a; }
+[data-theme="dark"] .resumo-card.card-atrasado.tem-atraso { background-color: #3a1a22; }
+[data-theme="dark"] .barra-horario-label { color: var(--muted); }
+[data-theme="dark"] .barra-horario-trilho { background-color: #1a2640; }
+[data-theme="dark"] .barra-horario-preenchida { background-color: #3b82f6; }
+[data-theme="dark"] .ranking-turma-linha { border-bottom-color: #222f4a; }
+
+/* ---------- selos de status ---------- */
+[data-theme="dark"] .status-pendente { background-color: rgba(251,191,36,.16); color: #fcd34d; }
+[data-theme="dark"] .status-aprovado, [data-theme="dark"] .status-aprovada,
+[data-theme="dark"] .status-ativo, [data-theme="dark"] .status-liberado { background-color: rgba(52,211,153,.16); color: #6ee7b7; }
+[data-theme="dark"] .status-rejeitado, [data-theme="dark"] .status-recusada,
+[data-theme="dark"] .status-cancelada, [data-theme="dark"] .status-desativado { background-color: rgba(248,113,113,.16); color: #fca5a5; }
+[data-theme="dark"] .status-em_saida { background-color: rgba(96,165,250,.18); color: #93c5fd; }
+[data-theme="dark"] .status-concluida { background-color: rgba(148,163,184,.16); color: #cbd5e1; }
+[data-theme="dark"] .status-atrasado { background-color: #dc2626; color: #fff; }
+[data-theme="dark"] .etiqueta-aluno { background: rgba(96,165,250,.18); color: #93c5fd; }
+[data-theme="dark"] .email-verificacao.ok { color: #6ee7b7; }
+[data-theme="dark"] .email-verificacao.erro { color: #fca5a5; }
+[data-theme="dark"] .email-verificacao.aviso { color: #fcd34d; }
+
+/* ---------- professor ---------- */
+[data-theme="dark"] .prof-tag { background: rgba(96,165,250,.18); color: #93c5fd; }
+[data-theme="dark"] .prof-tag.saiu { background: rgba(251,191,36,.16); color: #fcd34d; }
+[data-theme="dark"] .prof-tag.atrasado, [data-theme="dark"] .prof-tag.nao_retornou { background: rgba(248,113,113,.18); color: #fca5a5; }
+[data-theme="dark"] .prof-tag.retornou_atrasado { background: rgba(251,146,60,.18); color: #fdba74; }
+[data-theme="dark"] .prof-tag.dentro { background: rgba(52,211,153,.16); color: #6ee7b7; }
+[data-theme="dark"] .prof-tag.aprovada { background: rgba(56,189,248,.16); color: #7dd3fc; }
+[data-theme="dark"] .prof-aviso { background: #1a2640; color: #dbe4f3; }
+[data-theme="dark"] .comunicado-novo { background: rgba(59,130,246,.14); }
+[data-theme="dark"] .texto-atraso { color: #ff8a7a; }
+[data-theme="dark"] .notificacao-contador { background: #dc2626; }
+
+/* ---------- portaria / dias / seleção de painel ---------- */
+[data-theme="dark"] .status-box { background: #1a2640; }
+[data-theme="dark"] .status-box span { color: var(--text-color); }
+[data-theme="dark"] .dias-semana span { background-color: var(--input-bg); color: var(--text-color); border-color: var(--border-color); }
+[data-theme="dark"] .dias-semana input[type="checkbox"]:checked + span { background-color: #2563eb; border-color: #2563eb; color: #fff; }
+[data-theme="dark"] .selecao-card { border-color: #22304b; }
+[data-theme="dark"] .selecao-card:hover { border-color: #60a5fa; }
+[data-theme="dark"] .selecao-card i { color: #60a5fa; }
+
+/* ---------- janelas (modais) ---------- */
+[data-theme="dark"] .modal-negativa { background: rgba(2,6,15,.72); }
+[data-theme="dark"] .modal-negativa .modal-content { background: #141d2f; color: var(--text-color); border: 1px solid #2a3855; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+[data-theme="dark"] .modal-negativa textarea { background: var(--input-bg); color: var(--text-color); border-color: var(--border-color); }
+[data-theme="dark"] .modal-negativa .btn-cancel { background: #223250; color: #dbe4f3; }
+[data-theme="dark"] .aviso-senha-box { background: #141d2f !important; color: #dbe4f3 !important; border: 1px solid #2a3855; }
+
+/* ---------- barra de rolagem ---------- */
+[data-theme="dark"] ::-webkit-scrollbar { width: 11px; height: 11px; }
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #0b1220; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2a3855; border-radius: 8px; border: 2px solid #0b1220; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3a4d73; }
+[data-theme="dark"] * { scrollbar-color: #2a3855 #0b1220; }
