@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0A192F">
+    <title>Sem conexão - Portaria Inteligente</title>
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <style>
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0A192F; color: #fff; font-family: Arial, Helvetica, sans-serif; text-align: center; padding: 24px; box-sizing: border-box; }
+        main { max-width: 420px; }
+        img { width: 140px; height: auto; }
+        h1 { font-size: 24px; margin: 18px 0 8px; }
+        p { color: #C9D6EA; line-height: 1.5; }
+        button { margin-top: 18px; min-height: 48px; padding: 0 26px; border: 0; border-radius: 10px; background: #2F80ED; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <main>
+        <img src="/img/logo_pi.png" alt="Portaria Inteligente">
+        <h1>Você está sem internet</h1>
+        <p>Os pedidos de saída e as liberações precisam de conexão para ficarem sempre corretos. Assim que a internet voltar, é só tentar de novo.</p>
+        <button type="button" onclick="location.reload()">Tentar de novo</button>
+    </main>
+    <script>window.addEventListener('online', () => location.reload());</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ let pedidoSelecionado = null;
 // 1. GERENCIAMENTO DE TELAS E FORMULÁRIOS
 // ==========================================
 function mostrarTela(idTela) {
-    const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-perfis', 'tela-historico', 'tela-mensagens'];
+    const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-perfis', 'tela-historico', 'tela-mensagens', 'tela-equipe', 'tela-auditoria', 'tela-saude'];
     telas.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -18,6 +18,8 @@ function mostrarTela(idTela) {
     if (typeof fecharMenuNoCelular === 'function') fecharMenuNoCelular();
 
     if (window.PIChat) window.PIChat.aoMudarTela(idTela);
+    if (window.PIEquipe) window.PIEquipe.aoMudarTela(idTela);
+    if (window.PIAdmin) window.PIAdmin.aoMudarTela(idTela);
 
     if (idTela === 'tela-painel') {
         carregarPainelEstatisticas();
@@ -292,10 +294,10 @@ async function carregarPendentes() {
                     <td>${esc(pedido.responsavel || '-')}</td>
                     <td>${esc(pedido.motivo || '-')}</td>
                     <td>
-                        <button class="btn-action btn-accept" onclick="decidir(${pedido.pedidos_saida_id}, 'aceitar')">
+                        <button class="btn-action btn-accept" onclick="decidir(${pedido.pedidos_saida_id}, 'aceitar')" aria-label="Aprovar a saída de ${esc(pedido.nome_aluno || 'aluno')}" title="Aprovar">
                             <i class="fas fa-check"></i>
                         </button>
-                        <button class="btn-action btn-deny" onclick="abrirModalNegar(${pedido.pedidos_saida_id})">
+                        <button class="btn-action btn-deny" onclick="abrirModalNegar(${pedido.pedidos_saida_id})" aria-label="Recusar a saída de ${esc(pedido.nome_aluno || 'aluno')}" title="Recusar">
                             <i class="fas fa-times"></i>
                         </button>
                     </td>
@@ -583,22 +585,22 @@ function renderizarGerenciarAlunos(alunos) {
                 ${PIFoto.html(aluno.aluno_id, { tamanho: 'm', nome: aluno.nome })}
                 <button type="button" class="btn-foto-aluno" data-id="${aluno.aluno_id}">${temFoto ? 'Trocar foto' : 'Adicionar foto'}</button>
             </td>
-            <td>${aluno.nome}${temFoto ? '' : '<span class="badge-sem-foto">sem foto</span>'}</td>
-            <td>${aluno.matricula || '-'}</td>
+            <td>${esc(aluno.nome)}${temFoto ? '' : '<span class="badge-sem-foto">sem foto</span>'}</td>
+            <td>${esc(aluno.matricula || '-')}</td>
             <td>
-                <select class="select-turma-aluno" data-id="${aluno.aluno_id}">
+                <select class="select-turma-aluno" data-id="${aluno.aluno_id}" aria-label="Turma de ${esc(aluno.nome)}">
                     <option value="" disabled>Selecione</option>
                     ${opcoesTurma}
                 </select>
             </td>
             <td>
-                <select class="select-status-aluno" data-id="${aluno.aluno_id}">
+                <select class="select-status-aluno" data-id="${aluno.aluno_id}" aria-label="Situação de ${esc(aluno.nome)}">
                     <option value="ATIVO">ATIVO</option>
                     <option value="INATIVO">INATIVO</option>
                 </select>
             </td>
             <td>
-                <button type="button" class="btn-action btn-accept btn-salvar-aluno" data-id="${aluno.aluno_id}">
+                <button type="button" class="btn-action btn-accept btn-salvar-aluno" data-id="${aluno.aluno_id}" aria-label="Salvar alterações de ${esc(aluno.nome)}" title="Salvar">
                     <i class="fas fa-save"></i>
                 </button>
             </td>
@@ -800,245 +802,11 @@ async function alterarStatusPerfil(id, ativar) {
 document.getElementById('filtroPerfilBusca')?.addEventListener('input', aplicarFiltrosPerfis);
 
 // ==========================================
-// 3b. PAINEL DE ESTATÍSTICAS (dashboard)
+// 3b. RELATÓRIOS — a tela inteira fica em js/general/relatorio.js (PIRelatorio)
 // ==========================================
-let ultimoPainelCarregado = null;
-
-async function carregarPainelEstatisticas() {
-    const token = localStorage.getItem('token');
-    const inputData = document.getElementById('dataPainel');
-
-    // Data de hoje no horário LOCAL (toISOString usa UTC e virava "amanhã" a partir das 21h)
-    const d0 = new Date();
-    const hojeLocal = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, '0')}-${String(d0.getDate()).padStart(2, '0')}`;
-    if (inputData && !inputData.value) {
-        inputData.value = hojeLocal;
-    }
-    const data = inputData ? inputData.value : hojeLocal;
-
-    try {
-        const resp = await fetch(`${API_URL}/pedidos/estatisticas?data=${data}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!resp.ok) throw new Error('Falha ao buscar estatísticas');
-
-        const stats = await resp.json();
-        ultimoPainelCarregado = stats;
-        renderizarPainelEstatisticas(stats);
-    } catch (err) {
-        console.error('Erro ao carregar painel de estatísticas:', err);
-    }
+function carregarPainelEstatisticas() {
+    if (window.PIRelatorio) window.PIRelatorio.abrir();
 }
-
-function renderizarPainelEstatisticas(stats) {
-    const setTexto = (id, valor) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = valor;
-    };
-
-    setTexto('painel-pendentes', stats.pendentes ?? 0);
-    setTexto('painel-saidas', stats.saidasHoje ?? 0);
-    setTexto('painel-casa', stats.saidasCasa ?? 0);
-    setTexto('painel-emsaida', stats.emSaida ?? 0);
-    setTexto('painel-atrasados', stats.atrasados ?? 0);
-    setTexto('painel-tempo-medio', stats.tempoMedioRetornoMin !== null && stats.tempoMedioRetornoMin !== undefined ? stats.tempoMedioRetornoMin : '-');
-
-    const cardAtrasados = document.getElementById('card-painel-atrasados');
-    if (cardAtrasados) {
-        cardAtrasados.classList.toggle('tem-atraso', (stats.atrasados ?? 0) > 0);
-    }
-
-    // Ranking de turmas
-    const containerTurmas = document.getElementById('painel-turmas-ranking');
-    if (containerTurmas) {
-        if (!stats.turmasRanking || stats.turmasRanking.length === 0) {
-            containerTurmas.innerHTML = '<p style="color:#666;">Nenhum pedido registrado nesse dia.</p>';
-        } else {
-            containerTurmas.innerHTML = stats.turmasRanking.map(t => `
-                <div class="ranking-turma-linha">
-                    <span>${t.turma || 'Sem turma'}</span>
-                    <strong>${t.total} pedido(s)</strong>
-                </div>
-            `).join('');
-        }
-    }
-
-    // Gráfico simples de horários de pico (barras horizontais por hora do dia)
-    const containerHorarios = document.getElementById('painel-horarios-pico');
-    if (containerHorarios) {
-        if (!stats.horariosPico || stats.horariosPico.length === 0) {
-            containerHorarios.innerHTML = '<p style="color:#666;">Nenhum pedido registrado nesse dia.</p>';
-        } else {
-            const maiorTotal = Math.max(...stats.horariosPico.map(h => h.total));
-            containerHorarios.innerHTML = stats.horariosPico.map(h => {
-                const largura = Math.max(8, Math.round((h.total / maiorTotal) * 100));
-                const horaLabel = String(h.hora).padStart(2, '0') + 'h';
-                return `
-                    <div class="barra-horario-linha">
-                        <span class="barra-horario-label">${horaLabel}</span>
-                        <div class="barra-horario-trilho">
-                            <div class="barra-horario-preenchida" style="width: ${largura}%;">${h.total}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-    }
-}
-
-document.getElementById('dataPainel')?.addEventListener('change', carregarPainelEstatisticas);
-
-document.getElementById('btnGerarRelatorio')?.addEventListener('click', async () => {
-    if (!ultimoPainelCarregado) {
-        alert('Aguarde o painel carregar antes de gerar o relatório.');
-        return;
-    }
-
-    const btnRelatorio = document.getElementById('btnGerarRelatorio');
-    const textoOriginalBtn = btnRelatorio.innerHTML;
-    btnRelatorio.disabled = true;
-    btnRelatorio.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gerando...';
-
-    try {
-        const stats = ultimoPainelCarregado;
-        const token = localStorage.getItem('token');
-        const usuarioSalvo = JSON.parse(localStorage.getItem('usuario') || '{}');
-        const dataFormatada = new Date(stats.data + 'T00:00:00').toLocaleDateString('pt-BR');
-        const geradoEm = new Date().toLocaleString('pt-BR');
-
-        // Busca as listas nominais (não só os números) para o relatório ficar
-        // realmente útil pra secretaria imprimir e agir em cima dele.
-        const [respAtrasados, respPendentes] = await Promise.all([
-            fetch(`${API_URL}/pedidos/atrasados`, { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch(`${API_URL}/pedidos/listarPorStatus?status=PENDENTE`, { headers: { 'Authorization': `Bearer ${token}` } })
-        ]);
-        const atrasadosLista = respAtrasados.ok ? await respAtrasados.json() : [];
-        const pendentesLista = respPendentes.ok ? await respPendentes.json() : [];
-
-        const linhasTurmas = (stats.turmasRanking || [])
-            .map(t => `<tr><td>${t.turma || 'Sem turma'}</td><td>${t.total}</td></tr>`)
-            .join('') || '<tr><td colspan="2" class="vazio">Nenhum pedido registrado.</td></tr>';
-
-        const linhasHorarios = (stats.horariosPico || [])
-            .map(h => `<tr><td>${String(h.hora).padStart(2, '0')}h</td><td>${h.total}</td></tr>`)
-            .join('') || '<tr><td colspan="2" class="vazio">Nenhum pedido registrado.</td></tr>';
-
-        const linhasAtrasados = atrasadosLista
-            .map(p => `<tr><td>${p.nome_aluno}</td><td>${p.turma || '-'}</td><td>${p.hora_prevista_retorno ? new Date(p.hora_prevista_retorno).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-'}</td><td>${p.responsavel || '-'}</td></tr>`)
-            .join('') || '<tr><td colspan="4" class="vazio">Nenhum aluno atrasado no momento.</td></tr>';
-
-        const linhasPendentes = pendentesLista
-            .map(p => `<tr><td>${p.nome_aluno}</td><td>${p.turma || '-'}</td><td>${p.hora_prevista_saida ? new Date(p.hora_prevista_saida).toLocaleString('pt-BR') : '-'}</td><td>${p.responsavel || '-'}</td></tr>`)
-            .join('') || '<tr><td colspan="4" class="vazio">Nenhum pedido pendente no momento.</td></tr>';
-
-        const html = `
-        <!DOCTYPE html>
-        <html lang="pt-BR">
-        <head>
-            <meta charset="UTF-8">
-            <title>Relatório de Saídas - ${dataFormatada}</title>
-            <style>
-                * { box-sizing: border-box; }
-                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 36px; color: #1a202c; line-height: 1.4; }
-                .cabecalho { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0052cc; padding-bottom: 14px; margin-bottom: 6px; }
-                .cabecalho h1 { font-size: 21px; margin: 0; color: #0052cc; }
-                .cabecalho .selo { font-size: 11px; color: #fff; background: #0052cc; padding: 4px 10px; border-radius: 20px; font-weight: 700; letter-spacing: .5px; }
-                .meta { display: flex; justify-content: space-between; color: #718096; font-size: 12px; margin-bottom: 28px; }
-                .grid { display: flex; gap: 14px; margin-bottom: 32px; flex-wrap: wrap; }
-                .stat { flex: 1; min-width: 130px; border: 1px solid #e2e8f0; border-left: 4px solid #0052cc; border-radius: 8px; padding: 14px; text-align: center; }
-                .stat.alerta { border-left-color: #E52207; }
-                .stat h2 { font-size: 25px; margin: 0 0 4px 0; }
-                .stat.alerta h2 { color: #E52207; }
-                .stat p { margin: 0; font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: .3px; }
-                section.bloco { margin-bottom: 30px; page-break-inside: avoid; }
-                h3 { font-size: 14px; margin: 0 0 10px 0; color: #0052cc; border-left: 4px solid #0052cc; padding-left: 8px; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #edf2f7; font-size: 12.5px; }
-                th { background: #f4f6f8; font-size: 11px; text-transform: uppercase; color: #4a5568; }
-                td.vazio { color: #a0aec0; font-style: italic; }
-                .rodape { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 10px; font-size: 10.5px; color: #a0aec0; display: flex; justify-content: space-between; }
-                @media print {
-                    body { padding: 14px; }
-                    .stat:hover { transform: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="cabecalho">
-                <h1>Portaria Inteligente — Relatório de Saídas Antecipadas</h1>
-                <span class="selo">Data de referência: ${dataFormatada}</span>
-            </div>
-            <div class="meta">
-                <span>Gerado por: ${usuarioSalvo.nome || 'Secretaria'}</span>
-                <span>Gerado em: ${geradoEm}</span>
-            </div>
-
-            <div class="grid">
-                <div class="stat"><h2>${stats.pendentes ?? 0}</h2><p>Pendentes agora</p></div>
-                <div class="stat"><h2>${stats.saidasHoje ?? 0}</h2><p>Saídas no dia</p></div>
-                <div class="stat"><h2>${stats.saidasCasa ?? 0}</h2><p>Foram para casa</p></div>
-                <div class="stat"><h2>${stats.emSaida ?? 0}</h2><p>Ainda não voltaram</p></div>
-                <div class="stat alerta"><h2>${stats.atrasados ?? 0}</h2><p>Atrasados agora</p></div>
-                <div class="stat"><h2>${stats.tempoMedioRetornoMin ?? '-'}</h2><p>Tempo médio de retorno (min)</p></div>
-            </div>
-
-            <section class="bloco">
-                <h3>Alunos atrasados no momento</h3>
-                <table>
-                    <thead><tr><th>Aluno</th><th>Turma</th><th>Retorno previsto</th><th>Responsável</th></tr></thead>
-                    <tbody>${linhasAtrasados}</tbody>
-                </table>
-            </section>
-
-            <section class="bloco">
-                <h3>Pedidos pendentes de aprovação</h3>
-                <table>
-                    <thead><tr><th>Aluno</th><th>Turma</th><th>Saída prevista</th><th>Responsável</th></tr></thead>
-                    <tbody>${linhasPendentes}</tbody>
-                </table>
-            </section>
-
-            <section class="bloco">
-                <h3>Turmas que mais pediram saída</h3>
-                <table>
-                    <thead><tr><th>Turma</th><th>Pedidos</th></tr></thead>
-                    <tbody>${linhasTurmas}</tbody>
-                </table>
-            </section>
-
-            <section class="bloco">
-                <h3>Horários de pico</h3>
-                <table>
-                    <thead><tr><th>Hora</th><th>Pedidos</th></tr></thead>
-                    <tbody>${linhasHorarios}</tbody>
-                </table>
-            </section>
-
-            <div class="rodape">
-                <span>Sistema Portaria Inteligente</span>
-                <span>Documento gerado automaticamente — sem necessidade de assinatura</span>
-            </div>
-
-            <script>window.onload = () => window.print();<\/script>
-        </body>
-        </html>
-        `;
-
-        const janela = window.open('', '_blank');
-        if (!janela) {
-            alert('Não foi possível abrir o relatório. Verifique se o navegador está bloqueando pop-ups.');
-            return;
-        }
-        janela.document.write(html);
-        janela.document.close();
-    } catch (err) {
-        console.error('Erro ao gerar relatório:', err);
-        alert('Erro ao gerar relatório.');
-    } finally {
-        btnRelatorio.disabled = false;
-        btnRelatorio.innerHTML = textoOriginalBtn;
-    }
-});
 
 // ==========================================
 // 4. AUTENTICAÇÃO E INICIALIZAÇÃO

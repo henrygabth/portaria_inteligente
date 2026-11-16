@@ -22,6 +22,40 @@ function remetente() {
     return (process.env.EMAIL_FROM || user || 'portariainteligente950@gmail.com').trim();
 }
 
+// Remetente em domínio gratuito (gmail, hotmail...) não pode ser autenticado (SPF/DKIM/DMARC)
+// pelo Brevo. Resultado: o Brevo troca o endereço por um @brevosend.com ou o Gmail/Outlook
+// do destinatário rejeita/joga no spam. É a causa mais comum de "alguns e-mails não chegam".
+const DOMINIOS_GRATUITOS = ['gmail.com', 'googlemail.com', 'hotmail.com', 'outlook.com', 'live.com', 'yahoo.com', 'yahoo.com.br', 'bol.com.br', 'uol.com.br', 'icloud.com'];
+function remetenteGratuito() {
+    const dominio = remetente().split('@')[1] || '';
+    return DOMINIOS_GRATUITOS.includes(dominio.toLowerCase());
+}
+let avisouRemetente = false;
+function avisarRemetenteGratuito() {
+    if (avisouRemetente || !usaApi() || !remetenteGratuito()) return;
+    avisouRemetente = true;
+    console.warn(`[email] ATENÇÃO: o remetente ${remetente()} é de um provedor gratuito. O Brevo não consegue ` +
+        'autenticar esse domínio e parte dos e-mails pode ir para o spam ou ser recusada. Use EMAIL_FROM com um ' +
+        'domínio próprio autenticado no Brevo (Senders, Domains & Dedicated IPs > Domains).');
+}
+
+// Erros que valem nova tentativa: rede, tempo esgotado, limite de requisições (429) e
+// instabilidade do provedor (5xx). Os outros (chave inválida, e-mail inválido, remetente não
+// verificado...) não melhoram tentando de novo: são "permanentes".
+function erroTemporario(err) {
+    if (!err) return false;
+    if (ERROS_DE_CONEXAO.includes(err.code)) return true;
+    if (err.code === 'EAUTH') return false;
+    // SMTP: 4xx = temporário, 5xx = permanente (o contrário do HTTP).
+    if (err.responseCode) return Number(err.responseCode) >= 400 && Number(err.responseCode) < 500;
+    const status = Number(err.status || 0);
+    if (status === 429 || status >= 500) return true;
+    if (!status && !err.code) return true; // falha desconhecida de rede: tenta de novo
+    return false;
+}
+
+const espera = ms => new Promise(r => setTimeout(r, ms));
+
 async function chamarApi(metodo, rota, corpo) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
@@ -42,6 +76,9 @@ async function chamarApi(metodo, rota, corpo) {
         if (!resp.ok) {
             const erro = new Error(`Brevo API ${resp.status}: ${dados.message || texto || 'erro desconhecido'}`);
             erro.status = resp.status;
+            erro.permanente = !erroTemporario(erro);
+            if (resp.status === 401) erro.message += ' (confira BREVO_API_KEY no .env/Render)';
+            if (resp.status === 429) erro.retryAfter = Number(resp.headers.get('retry-after')) || null;
             throw erro;
         }
         return dados;
@@ -57,20 +94,27 @@ async function chamarApi(metodo, rota, corpo) {
     }
 }
 
-async function enviarPorApi({ to, subject, text, html, fromName }) {
+async function enviarPorApi({ to, subject, text, html, fromName, tag }) {
     const destinatarios = (Array.isArray(to) ? to : String(to).split(','))
         .map(e => e.trim()).filter(Boolean).map(email => ({ email }));
 
-    // A API não aceita imagem embutida (cid); remove a logo para não aparecer
-    // como imagem quebrada.
-    const htmlLimpo = html ? html.replace(/<img[^>]*src="cid:[^"]*"[^>]*>/gi, '') : html;
+    // A API não aceita imagem embutida (cid). Com BASE_URL em https, a logo passa a vir
+    // do próprio site; sem isso, é removida para não aparecer como imagem quebrada.
+    const base = String(process.env.BASE_URL || '').replace(/\/+$/, '');
+    const htmlLimpo = !html ? html : (/^https:\/\//.test(base)
+        ? html.replace(/src="cid:[^"]*"/gi, `src="${base}/img/logo_pi.png"`)
+        : html.replace(/<img[^>]*src="cid:[^"]*"[^>]*>/gi, ''));
 
     const corpo = {
         sender: { name: fromName, email: remetente() },
         to: destinatarios,
         subject,
         textContent: text || undefined,
-        htmlContent: htmlLimpo || undefined
+        htmlContent: htmlLimpo || undefined,
+        // E-mail automático: respostas vão para a escola, se configurado.
+        ...(process.env.EMAIL_REPLY_TO ? { replyTo: { email: process.env.EMAIL_REPLY_TO.trim() } } : {}),
+        // Marca como transacional e agrupa no painel do Brevo (Transactional > Logs).
+        tags: [tag || 'portaria-inteligente']
     };
     if (!corpo.htmlContent && !corpo.textContent) corpo.textContent = ' ';
 
@@ -140,9 +184,25 @@ async function enviarPorSmtp({ to, subject, text, html, fromName }) {
 }
 
 // ------------------------------------------------------------- Interface
-async function enviarEmail({ to, subject, text, html, fromName = 'Portaria Inteligente' }) {
-    if (usaApi()) return enviarPorApi({ to, subject, text, html, fromName });
-    return enviarPorSmtp({ to, subject, text, html, fromName });
+// Até 3 tentativas para falhas temporárias (rede, 429, 5xx), com espera crescente.
+// Falha permanente sai na hora com err.permanente = true (a fila não insiste nela).
+async function enviarEmail({ to, subject, text, html, fromName = 'Portaria Inteligente', tag, tentativas = 3 }) {
+    avisarRemetenteGratuito();
+    let ultimoErro;
+    for (let i = 1; i <= tentativas; i++) {
+        try {
+            if (usaApi()) return await enviarPorApi({ to, subject, text, html, fromName, tag });
+            return await enviarPorSmtp({ to, subject, text, html, fromName });
+        } catch (err) {
+            ultimoErro = err;
+            if (err.permanente === undefined) err.permanente = !erroTemporario(err);
+            if (err.permanente || i === tentativas) break;
+            const ms = err.retryAfter ? Math.min(err.retryAfter * 1000, 30000) : 1500 * 2 ** (i - 1);
+            console.warn(`[email] Falha temporária ao enviar para ${to} (${err.status || err.code || 'rede'}); nova tentativa em ${ms} ms.`);
+            await espera(ms);
+        }
+    }
+    throw ultimoErro;
 }
 
 async function verificarConexao() {
@@ -167,4 +227,4 @@ async function verificarConexao() {
     return resultados;
 }
 
-module.exports = { enviarEmail, verificarConexao, LOGO_CID };
+module.exports = { enviarEmail, verificarConexao, LOGO_CID, erroTemporario, remetenteGratuito };

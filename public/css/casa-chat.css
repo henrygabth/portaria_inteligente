@@ -55,3 +55,65 @@
 .chat-form button i { font-size:16px; margin:0 2px 0 0; }
 .chat-form button:hover { background:#0047b3; }
 .chat-form button:disabled { opacity:.6; cursor:wait; }
+
+/* ===== Central de notificações (sino na barra do topo) ===== */
+.pi-sino-caixa { position:absolute; top:50%; right:84px; transform:translateY(-50%); z-index:1100; }
+.pi-sino { position:relative; margin:0; padding:0; width:40px; height:40px; border:0; border-radius:50%; background:transparent; color:#fff;
+    font-size:19px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s; }
+.pi-sino:hover, .pi-sino[aria-expanded="true"] { background:rgba(255,255,255,.16); }
+.pi-sino-contador { position:absolute; top:2px; right:0; min-width:18px; height:18px; padding:0 5px; border-radius:9px;
+    background:#e5383b; color:#fff; font-size:11px; font-weight:700; line-height:18px; text-align:center;
+    box-shadow:0 0 0 2px var(--primary-blue,#0052cc); }
+.pi-sino.balancar i { animation:pi-balanca .9s ease; transform-origin:50% 0; }
+@keyframes pi-balanca { 0%,100%{transform:rotate(0)} 15%{transform:rotate(18deg)} 30%{transform:rotate(-16deg)} 45%{transform:rotate(12deg)} 60%{transform:rotate(-8deg)} 75%{transform:rotate(4deg)} }
+.pi-sino-menu { position:absolute; right:-6px; top:48px; width:300px; background:var(--card-bg,#fff); color:var(--text-color,#1f2937);
+    border-radius:12px; box-shadow:0 14px 40px rgba(10,25,47,.28); overflow:hidden; border:1px solid var(--border-color,#e5e9f0); }
+.pi-sino-topo { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border-bottom:1px solid var(--border-color,#e5e9f0); }
+.pi-sino-topo strong { font-size:15px; }
+.pi-sino-som { border:0; background:transparent; color:inherit; opacity:.75; font:inherit; font-size:12px; cursor:pointer; padding:4px 6px; border-radius:6px; }
+.pi-sino-som:hover { opacity:1; background:rgba(128,128,128,.12); }
+.pi-sino-item { margin:0; display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border:0; background:transparent;
+    color:inherit; font:inherit; text-align:left; cursor:pointer; border-bottom:1px solid var(--border-color,#eef1f6); }
+.pi-sino-item:hover { background:rgba(0,82,204,.06); }
+.pi-sino-item > i { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:#eef3fb; color:#0052cc; flex:0 0 auto; }
+.pi-sino-item.tem > i { background:#0052cc; color:#fff; }
+.pi-sino-item span { flex:1; display:flex; flex-direction:column; }
+.pi-sino-item small { opacity:.7; font-size:12px; }
+.pi-sino-item.tem small { opacity:1; color:#0052cc; font-weight:600; }
+.pi-sino-item em { font-style:normal; background:#e5383b; color:#fff; border-radius:10px; padding:1px 8px; font-size:12px; font-weight:700; }
+.pi-sino-vazio { padding:16px; margin:0; opacity:.7; text-align:center; }
+.pi-sino-permitir { display:block; width:100%; border:0; background:rgba(0,82,204,.06); color:#0052cc; font:inherit; font-size:13px;
+    font-weight:600; padding:11px; cursor:pointer; }
+[data-theme="dark"] .pi-sino-item > i { background:#263449; color:#9cc0ff; }
+[data-theme="dark"] .pi-sino-item.tem small, [data-theme="dark"] .pi-sino-permitir { color:#9cc0ff; }
+@media (max-width: 600px) { .pi-sino-caixa { right:86px; } .pi-sino { width:34px; height:34px; font-size:17px; } .pi-sino-menu { position:fixed; right:10px; left:10px; top:64px; width:auto; } }
+
+/* Pilha de avisos (até 3) no canto da tela */
+.pi-toasts { position:fixed; right:20px; bottom:20px; z-index:3000; display:flex; flex-direction:column; gap:10px; align-items:flex-end; }
+.pi-toasts .chat-toast { position:relative; right:auto; bottom:auto; padding-right:34px; animation:pi-entra .25s ease; }
+.pi-toasts .chat-toast strong i { margin-right:4px; }
+.pi-toast-fechar { width:auto; padding:0; margin:0; position:absolute; top:6px; right:8px; border:0; background:transparent; color:#fff; font-size:18px; line-height:1; cursor:pointer; opacity:.8; }
+@keyframes pi-entra { from { transform:translateY(12px); opacity:0; } to { transform:none; opacity:1; } }
+
+/* ===== Chat interno secretaria ⇄ portaria ===== */
+.equipe-card { max-width:900px; }
+.equipe-topo { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.equipe-topo strong { display:block; font-size:16px; }
+.equipe-topo small { display:block; opacity:.75; font-size:13px; line-height:1.4; }
+.equipe-avatar { width:44px; height:44px; flex:0 0 auto; border-radius:12px; display:grid; place-items:center; font-size:19px; color:#fff;
+    background:linear-gradient(135deg,#0052cc,#0A192F); }
+.equipe-mensagens { height:48vh; }
+.equipe-mensagens .chat-vazio i { font-size:28px; opacity:.5; margin-bottom:6px; }
+.equipe-dia { text-align:center; margin:6px 0; }
+.equipe-dia span { font-size:11px; font-weight:700; text-transform:capitalize; padding:3px 10px; border-radius:10px; background:rgba(128,128,128,.14); opacity:.85; }
+.chat-msg.outro.lado-portaria { border-left:3px solid #2f9e44; }
+.chat-msg.outro.lado-secretaria { border-left:3px solid #0052cc; }
+.chat-msg.minha .fa-check-double { color:#9be7ff; }
+.equipe-rapidas { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.equipe-rapidas button { width:auto; margin:0; border:1px solid var(--border-color,#ccd3df); background:var(--card-bg,#fff); color:inherit; font:inherit; font-size:12.5px;
+    padding:6px 12px; border-radius:16px; cursor:pointer; }
+.equipe-rapidas button:hover { border-color:#0052cc; color:#0052cc; }
+[data-theme="dark"] .equipe-rapidas button { background:rgba(255,255,255,.05); }
+
+/* Celular: com o sino na barra, fica só o logo (sem o nome) para não encostar nos ícones. */
+@media (max-width: 480px) { .navbar:has(.pi-sino-caixa) .logo a { font-size:0; gap:0; } .navbar:has(.pi-sino-caixa) .logo img { height:28px; } }

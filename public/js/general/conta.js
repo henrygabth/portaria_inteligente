@@ -83,6 +83,8 @@ document.getElementById('formConta').addEventListener('submit', async (e) => {
             return;
         }
 
+        // Ao trocar a senha o servidor encerra as outras sessões e devolve um token novo para esta.
+        if (resultado.token) { try { localStorage.setItem('token', resultado.token); } catch (_) { /* sem storage */ } }
         alert('Dados atualizados com sucesso!');
         if (corpo.novaSenha) { try { localStorage.removeItem('sugerirTrocaSenha'); } catch (_) { /* sem storage */ } }
 

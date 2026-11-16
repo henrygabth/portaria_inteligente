@@ -26,7 +26,7 @@ const turmasController = {
             return res.status(201).json({ mensagem: `Turma ${id_turma} cadastrada com sucesso` });
         } catch (error) {
             console.error(error);
-            return res.status(500).json({ erro: "Erro ao cadastrar turma", detalhes: error.message });
+            return res.status(500).json({ erro: "Erro ao cadastrar turma" });
         }
     },
 

@@ -3,15 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0A192F">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icones/icone-192.png">
+    <link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portaria">
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <script src="/js/general/pwa.js" defer></script>
     <title>Professor - Portaria Inteligente</title>
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="./css/global.css?v=4" rel="stylesheet">
     <link href="./css/home.css?v=8" rel="stylesheet">
     <link href="./css/secretaria.css?v=5" rel="stylesheet">
-    <link href="./css/professor.css?v=3" rel="stylesheet">
-    <link href="./css/casa-chat.css?v=1" rel="stylesheet">
-    <link href="./css/tema-escuro.css?v=1" rel="stylesheet">
+    <link href="./css/professor.css?v=4" rel="stylesheet">
+    <link href="./css/casa-chat.css?v=9" rel="stylesheet">
+    <link href="./css/tema-escuro.css?v=3" rel="stylesheet">
     <script src="./js/general/particulas.js?v=1"></script>
     <script src="./js/general/menu-lateral.js?v=1"></script>
 </head>
@@ -30,11 +39,31 @@
     </ul></aside>
     <main class="main-content" id="mainContent">
         <section id="tela-painel">
-            <h1>Painel do Professor</h1>
-            <div class="card"><h2>Situação dos alunos</h2><p class="descricao-tela">Acompanhamento das suas turmas. Horário previsto e real de saída e retorno, atrasos em minutos e motivo. A secretaria autoriza; a portaria registra. Atualização automática a cada 15 segundos.</p>
-                <div id="resumoProfessor" class="resumo-grid"></div>
-                <div class="filter-area"><label for="filtroTurmaPainel">Turma:</label><select id="filtroTurmaPainel" class="filter-select"><option value="">Todas as minhas turmas</option></select></div>
-                <div class="table-responsive"><table class="history-table"><thead><tr><th>Aluno</th><th>Turma</th><th>Situação</th><th>Saída prevista</th><th>Saiu às</th><th>Retorno previsto</th><th>Voltou às</th><th>Atraso</th><th>Motivo</th></tr></thead><tbody id="tabelaPainel"><tr><td colspan="9">Carregando...</td></tr></tbody></table></div>
+            <header class="pp-cabecalho">
+                <div>
+                    <h1>Minhas Turmas</h1>
+                    <p class="descricao-tela">Saídas e retornos dos alunos das suas turmas hoje: quem tem saída autorizada, quem está fora, quem atrasou e quem foi para casa. A secretaria autoriza; a portaria registra.</p>
+                </div>
+                <span class="pp-atualizado" id="ppAtualizado" aria-live="polite"><i class="fas fa-circle"></i> Atualizado agora</span>
+            </header>
+
+            <div id="resumoProfessor" class="pp-resumo" role="tablist" aria-label="Filtrar alunos por situação"></div>
+
+            <div class="card pp-card">
+                <div class="pp-barra">
+                    <div class="pp-filtros">
+                        <label for="filtroTurmaPainel" class="sr-only">Turma</label>
+                        <select id="filtroTurmaPainel" class="filter-select"><option value="">Todas as minhas turmas</option></select>
+                        <div class="pp-busca">
+                            <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                            <input type="search" id="buscaAlunoPainel" placeholder="Buscar aluno" aria-label="Buscar aluno">
+                        </div>
+                    </div>
+                </div>
+                <p class="pp-legenda" id="ppLegenda"></p>
+                <div class="table-responsive"><table class="history-table pp-tabela"><thead><tr>
+                    <th>Aluno</th><th>Situação</th><th>Saída</th><th>Retorno</th><th>Motivo</th>
+                </tr></thead><tbody id="tabelaPainel"><tr><td colspan="5">Carregando...</td></tr></tbody></table></div>
             </div>
         </section>
         <section id="tela-comunicados" style="display:none;">
@@ -56,9 +85,9 @@
             </div>
         </section>
     </main>
-    <script src="./js/general/sessao.js?v=2"></script>
-    <script src="./js/general/layout.js?v=3"></script>
+    <script src="./js/general/sessao.js?v=261114"></script>
+    <script src="./js/general/layout.js?v=261114"></script>
     <script src="./js/general/tempo-real.js?v=1"></script>
-    <script src="./js/general/professor.js?v=5"></script>
+    <script src="./js/general/professor.js?v=7"></script>
 </body>
 </html>

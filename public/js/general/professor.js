@@ -46,8 +46,8 @@ function atualizarFiltroAlunos() {
     sel.innerHTML = '<option value="">Todos</option>' + filtrados.map(a => `<option value="${a.aluno_id}">${escProf(a.nome)}</option>`).join('');
     if (filtrados.some(a => String(a.aluno_id) === antigo)) sel.value = antigo;
 }
-const estados = { DENTRO: 'Na escola', AUTORIZADO: 'Saída autorizada', SAIU: 'Fora da escola', ATRASADO: 'Atrasado', NAO_RETORNOU: 'Não voltou', RETORNOU: 'Voltou', RETORNOU_ATRASADO: 'Voltou atrasado', FOI_PARA_CASA: 'Foi para casa' };
-const classeSituacao = { DENTRO: 'dentro', AUTORIZADO: 'aprovada', SAIU: 'saiu', ATRASADO: 'atrasado', NAO_RETORNOU: 'nao_retornou', RETORNOU: 'dentro', RETORNOU_ATRASADO: 'retornou_atrasado', FOI_PARA_CASA: 'foi_para_casa' };
+const estados = { SEM_SAIDA: 'Sem saída hoje', DENTRO: 'Sem saída hoje', AUTORIZADO: 'Saída autorizada', SAIU: 'Fora da escola', ATRASADO: 'Atrasado', NAO_RETORNOU: 'Não voltou', RETORNOU: 'Voltou', RETORNOU_ATRASADO: 'Voltou atrasado', FOI_PARA_CASA: 'Foi para casa' };
+const classeSituacao = { SEM_SAIDA: 'sem_saida', DENTRO: 'sem_saida', AUTORIZADO: 'aprovada', SAIU: 'saiu', ATRASADO: 'atrasado', NAO_RETORNOU: 'nao_retornou', RETORNOU: 'dentro', RETORNOU_ATRASADO: 'retornou_atrasado', FOI_PARA_CASA: 'foi_para_casa' };
 // Hoje mostra só a hora; outro dia mostra data + hora.
 const horaProf = valor => {
     if (!valor) return '-';
@@ -59,33 +59,95 @@ const atrasoProf = min => min ? `<strong class="texto-atraso">${min} min</strong
 const tipos = { APROVADA: 'Saída autorizada', SAIDA: 'Saiu', RETORNO: 'Voltou', ATRASADO: 'Atrasado', NAO_RETORNOU: 'Não voltou', CASA: 'Foi para casa', RECUSADA: 'Recusada', CANCELADA: 'Cancelada' };
 const rotuloTipo = t => tipos[t] || t || 'Comunicado';
 
+// O sistema não registra a chegada dos alunos: ele só sabe das saídas e retornos.
+// Por isso não existe "na escola"; quem não tem pedido hoje aparece como "sem saída hoje".
+const FORA = ['SAIU', 'ATRASADO', 'NAO_RETORNOU'];
+const SEM_MOVIMENTO = ['SEM_SAIDA', 'DENTRO'];
+const ABAS = [
+    ['hoje', 'Com movimentação hoje', 'fa-arrow-right-arrow-left', 'azul'],
+    ['autorizados', 'Saída autorizada', 'fa-clipboard-check', 'verde'],
+    ['fora', 'Fora da escola', 'fa-person-walking-arrow-right', 'amarelo'],
+    ['atrasados', 'Atrasados agora', 'fa-triangle-exclamation', 'vermelho'],
+    ['casa', 'Foram para casa', 'fa-house', 'roxo'],
+    ['todos', 'Todos os alunos', 'fa-users', 'cinza']
+];
+let abaPainel = 'hoje';
+const LEGENDAS = {
+    hoje: 'Alunos que tiveram saída autorizada, saíram, voltaram ou foram para casa hoje.',
+    autorizados: 'A secretaria autorizou a saída, mas o aluno ainda não passou pela portaria.',
+    fora: 'Saíram pela portaria e ainda não voltaram.',
+    atrasados: 'Passaram mais de 5 minutos do horário previsto de retorno.',
+    casa: 'Liberados pela portaria para ir para casa; não voltam hoje.',
+    todos: 'Todos os alunos ativos das suas turmas. “Sem saída hoje” quer dizer que não há pedido de saída para o aluno hoje (o sistema não registra a chegada).'
+};
+
+function noFiltro(a, aba) {
+    switch (aba) {
+        case 'hoje': return !SEM_MOVIMENTO.includes(a.situacao);
+        case 'autorizados': return a.situacao === 'AUTORIZADO';
+        case 'fora': return FORA.includes(a.situacao);
+        case 'atrasados': return ['ATRASADO', 'NAO_RETORNOU'].includes(a.situacao);
+        case 'casa': return a.situacao === 'FOI_PARA_CASA';
+        default: return true;
+    }
+}
+
+function rotuloSituacao(a) {
+    if (a.situacao === 'AUTORIZADO') return a.tipo === 'CASA' ? 'Liberação para casa autorizada' : 'Saída autorizada';
+    return estados[a.situacao] || 'Sem saída hoje';
+}
+
+function celulaSaida(a) {
+    if (!a.pedido_id) return '-';
+    const previsto = `<small class="pp-sub">previsto ${horaProf(a.hora_prevista_saida)}</small>`;
+    return a.hora_saida_real ? `${horaProf(a.hora_saida_real)}${previsto}` : previsto;
+}
+function celulaRetorno(a) {
+    if (!a.pedido_id) return '-';
+    if (a.tipo === 'CASA') return '<small class="pp-sub">não volta</small>';
+    const previsto = `<small class="pp-sub">previsto ${horaProf(a.hora_prevista_retorno)}</small>`;
+    const atraso = a.minutos_atraso ? `<small class="pp-sub">${atrasoProf(a.minutos_atraso)} de atraso</small>` : '';
+    return (a.hora_retorno_real ? horaProf(a.hora_retorno_real) : '') + previsto + atraso;
+}
+
+function desenharResumo(dados) {
+    document.getElementById('resumoProfessor').innerHTML = ABAS.map(([id, titulo, icone, cor]) => {
+        const n = dados.filter(a => noFiltro(a, id)).length;
+        const alerta = id === 'atrasados' && n > 0;
+        return `<button type="button" role="tab" aria-selected="${abaPainel === id}" data-aba="${id}"
+            class="pp-resumo-card ${cor} ${abaPainel === id ? 'ativa' : ''} ${alerta ? 'tem-atraso' : ''}">
+            <span class="pp-resumo-icone"><i class="fas ${icone}"></i></span>
+            <strong>${n}</strong><span>${titulo}</span></button>`;
+    }).join('');
+}
+
 async function carregarPainel() {
     const tabela = document.getElementById('tabelaPainel');
     try {
         alunos = await consultarProf('/painel');
         atualizarFiltroAlunos();
         const filtro = document.getElementById('filtroTurmaPainel').value;
-        const dados = alunos.filter(a => !filtro || String(a.id_turma) === filtro);
-        const n = (...ss) => dados.filter(a => ss.includes(a.situacao)).length;
-        const cards = [
-            ['Na escola', n('DENTRO', 'RETORNOU', 'RETORNOU_ATRASADO', 'AUTORIZADO'), ''],
-            ['Saída autorizada', n('AUTORIZADO'), 'card-pendente'],
-            ['Fora da escola', n('SAIU', 'ATRASADO', 'NAO_RETORNOU'), 'card-info'],
-            ['Atrasados agora', n('ATRASADO', 'NAO_RETORNOU'), 'card-atrasado' + (n('ATRASADO', 'NAO_RETORNOU') ? ' tem-atraso' : '')],
-            ['Voltaram atrasados', n('RETORNOU_ATRASADO'), 'card-atrasado'],
-            ['Foram para casa', n('FOI_PARA_CASA'), 'card-info']
-        ];
-        document.getElementById('resumoProfessor').innerHTML = cards.map(([t, v, c]) =>
-            `<div class="resumo-card ${c}"><h3>${v}</h3><p>${t}</p></div>`).join('');
+        const termo = (document.getElementById('buscaAlunoPainel')?.value || '').trim().toLowerCase();
+        const daTurma = alunos.filter(a => !filtro || String(a.id_turma) === filtro);
+        desenharResumo(daTurma);
+        document.getElementById('ppLegenda').textContent = LEGENDAS[abaPainel] || '';
+
+        const dados = daTurma.filter(a => noFiltro(a, abaPainel) && (!termo || String(a.nome).toLowerCase().includes(termo)));
         tabela.innerHTML = dados.length ? dados.map(a => `<tr class="${['ATRASADO','NAO_RETORNOU'].includes(a.situacao) ? 'linha-atrasada' : ''}">
-           <td>${escProf(a.nome)}</td><td>${escProf(a.turma)}</td>
-           <td><span class="prof-tag ${classeSituacao[a.situacao] || 'dentro'}">${a.tipo === 'CASA' && a.situacao === 'AUTORIZADO' ? 'Liberação para casa autorizada' : (estados[a.situacao] || 'Na escola')}</span></td>
-           <td>${a.pedido_id ? horaProf(a.hora_prevista_saida) : '-'}</td><td>${horaProf(a.hora_saida_real)}</td>
-           <td>${a.tipo === 'CASA' ? 'Não volta' : horaProf(a.hora_prevista_retorno)}</td><td>${horaProf(a.hora_retorno_real)}</td>
-           <td>${atrasoProf(a.minutos_atraso)}</td><td>${escProf(a.motivo || '-')}</td></tr>`).join('') :
-           `<tr><td colspan="9">${turmas.length ? 'Nenhum aluno nessa turma.' : 'Você ainda não possui turmas vinculadas. Solicite o vínculo à secretaria.'}</td></tr>`;
-    } catch (err) { tabela.innerHTML = `<tr><td colspan="9">${escProf(err.message)}</td></tr>`; }
+           <td><strong class="pp-nome">${escProf(a.nome)}</strong><small class="pp-sub">${escProf(a.turma)}</small></td>
+           <td><span class="prof-tag ${classeSituacao[a.situacao] || 'sem_saida'}">${escProf(rotuloSituacao(a))}</span></td>
+           <td>${celulaSaida(a)}</td>
+           <td>${celulaRetorno(a)}</td>
+           <td>${escProf(a.motivo || '-')}</td></tr>`).join('') :
+           `<tr><td colspan="5" class="pp-vazio">${!turmas.length ? 'Você ainda não possui turmas vinculadas. Solicite o vínculo à secretaria.'
+                : termo ? 'Nenhum aluno com esse nome neste filtro.'
+                : abaPainel === 'hoje' ? 'Nenhuma saída nas suas turmas hoje.'
+                : 'Nenhum aluno nesta situação agora.'}</td></tr>`;
+        const marcador = document.getElementById('ppAtualizado');
+        if (marcador) marcador.innerHTML = `<i class="fas fa-circle"></i> Atualizado às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    } catch (err) { tabela.innerHTML = `<tr><td colspan="5">${escProf(err.message)}</td></tr>`; }
 }
+
 async function carregarComunicados() {
     const tbody = document.getElementById('tabelaComunicados');
     const p = new URLSearchParams();
@@ -146,6 +208,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             atualizarProfessor();
         });
     }
+    document.getElementById('resumoProfessor').addEventListener('click', e => {
+        const card = e.target.closest('[data-aba]');
+        if (!card) return;
+        abaPainel = card.dataset.aba;
+        carregarPainel();
+    });
+    let esperaBusca;
+    document.getElementById('buscaAlunoPainel').addEventListener('input', () => { clearTimeout(esperaBusca); esperaBusca = setTimeout(carregarPainel, 150); });
     document.getElementById('limparFiltros').addEventListener('click', () => {
         for (const id of ['filtroTurmaCom','filtroAlunoCom','filtroTipoCom','filtroDataCom']) document.getElementById(id).value = '';
         paginaAtual = 1;

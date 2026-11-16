@@ -38,6 +38,8 @@ Atualmente, o controle de saída de alunos em muitas escolas ainda é feito de f
 - Visual padronizado: mesma navbar/sidebar e fundo de pontinhos animados (`particulas.js`) em todas as telas
 - Rastreabilidade dos alertas enviados e das ocorrências automáticas
 - Histórico de pedidos e saídas
+- Painel do professor com as saídas e retornos do dia (autorizados, fora da escola, atrasados, foram para casa)
+- Segurança: limite de tentativas de login, sessões derrubadas ao trocar a senha, link de redefinição de uso único, cabeçalhos de proteção (CSP, anti-iframe) e validação de dados
 
 ---
 

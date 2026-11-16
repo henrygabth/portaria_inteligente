@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const pub = path.join(__dirname, '..', 'public');
-const paginas = fs.readdirSync(pub).filter(f => f.endsWith('.html'));
+// offline.html fica de fora: precisa abrir sem internet, sem bibliotecas externas.
+const paginas = fs.readdirSync(pub).filter(f => f.endsWith('.html') && f !== 'offline.html');
 const ler = f => fs.readFileSync(path.join(pub, f), 'utf8');
 
 test('toda tela carrega o particulas.js e nenhuma carrega a biblioteca direto', () => {

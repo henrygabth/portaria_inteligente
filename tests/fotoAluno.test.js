@@ -82,10 +82,15 @@ mock('utils/alertasEmail.js', { avisarTodos: async () => {}, retornouAtrasado: a
 mock('model/ocorrenciasModel.js', {});
 delete require.cache[require.resolve(path.join(raiz, 'controller/pedidosController.js'))];
 const pedidosCtl = require(path.join(raiz, 'controller/pedidosController.js'));
+// Data sempre no futuro: o servidor agora recusa saída marcada para um horário que já passou.
+const amanha10h = () => {
+    const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T10:00:00`;
+};
 const cadastrar = async corpo => {
     criados.length = 0;
     const r = novoRes();
-    await pedidosCtl.cadastrar({ usuario: { id_usuario: 5, tipo_usuario: 'PAI' }, body: { aluno_id: 7, hora_prevista_saida: '2026-11-13T10:00:00', ...corpo } }, r);
+    await pedidosCtl.cadastrar({ usuario: { id_usuario: 5, tipo_usuario: 'PAI' }, body: { aluno_id: 7, hora_prevista_saida: amanha10h(), ...corpo } }, r);
     return r;
 };
 

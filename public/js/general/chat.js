@@ -38,25 +38,11 @@
     };
 
     // ------------------------------------------------------------ avisos de nova mensagem
-    function toast(titulo, texto, aoClicar) {
-        const aviso = document.createElement('div');
-        aviso.className = 'chat-toast';
-        aviso.setAttribute('role', 'alert');
-        aviso.innerHTML = `<strong>${esc(titulo)}</strong><span>${esc(texto.length > 90 ? texto.slice(0, 90) + '…' : texto)}</span>`;
-        aviso.addEventListener('click', () => { aviso.remove(); aoClicar(); });
-        document.body.appendChild(aviso);
-        setTimeout(() => aviso.remove(), 9000);
+    // Os avisos (na tela, som, navegador e sino) ficam na central js/general/notificacoes.js.
+    function avisar(titulo, texto, tag, aoClicar) {
+        if (window.PINotif) window.PINotif.avisar({ titulo, texto, tag, aoClicar });
     }
-    function notificarNavegador(titulo, texto, tag) {
-        if (!('Notification' in window) || Notification.permission !== 'granted' || !document.hidden) return;
-        try { new Notification(titulo, { body: texto, tag, icon: './img/logo_pi.png' }); } catch (_) { /* navegador sem suporte */ }
-    }
-    function pedirPermissaoNotificacao() {
-        // Só pergunta uma vez e a pedido do uso (ao abrir Mensagens); respeita a escolha do usuário.
-        if ('Notification' in window && Notification.permission === 'default') {
-            try { Notification.requestPermission(); } catch (_) { /* ignora */ }
-        }
-    }
+    function pedirPermissaoNotificacao() { if (window.PINotif) window.PINotif.pedirPermissao(); }
 
     function ligarEnvio(form, area, erro, enviar) {
         const botao = form.querySelector('button');
@@ -84,6 +70,7 @@
             const { naoLidas } = await chamar('/nao-lidas');
             el.textContent = naoLidas;
             el.style.display = naoLidas ? 'inline-block' : 'none';
+            if (window.PINotif) window.PINotif.definir('chat', naoLidas);
         } catch (_) { /* silencioso: o menu continua funcionando */ }
     }
 
@@ -199,13 +186,12 @@
         const naConversa = sec ? (atual && atual.responsavel_id === m.responsavel_id) : true;
         if (telaAberta()) {
             // Conversa aberta e visível: a mensagem aparece na hora (e é marcada como lida ao carregar).
-            if (sec) { carregarConversas(); if (naConversa) carregarConversaAtual(); else if (deles) toast(m.remetente, m.texto, () => abrirConversa({ responsavel_id: m.responsavel_id, nome: m.remetente })); }
+            if (sec) { carregarConversas(); if (naConversa) carregarConversaAtual(); else if (deles) avisar(`Nova mensagem de ${m.remetente}`, m.texto, 'pi-chat-' + m.responsavel_id, () => abrirConversa({ responsavel_id: m.responsavel_id, nome: m.remetente })); }
             else carregarResp();
         } else if (deles) {
             // Outra tela ou aba em segundo plano: aviso visual dentro do sistema e do navegador.
             const titulo = sec ? `Nova mensagem de ${m.remetente}` : 'Nova mensagem da Secretaria';
-            toast(titulo, m.texto, () => { abrirTelaMensagens(); if (sec) abrirConversa({ responsavel_id: m.responsavel_id, nome: m.remetente }); });
-            notificarNavegador(titulo, m.texto, 'pi-chat-' + m.responsavel_id);
+            avisar(titulo, m.texto, 'pi-chat-' + m.responsavel_id, () => { abrirTelaMensagens(); if (sec) abrirConversa({ responsavel_id: m.responsavel_id, nome: m.remetente }); });
         }
         atualizarContador();
     }
@@ -231,6 +217,14 @@
         atualizarContador
     };
     document.addEventListener('DOMContentLoaded', () => {
+        if (!document.getElementById('contadorChat')) return; // página sem o chat com responsáveis
+        if (window.PINotif) {
+            const sec = souSecretaria();
+            window.PINotif.fonte('chat', {
+                rotulo: sec ? 'Mensagens dos responsáveis' : 'Mensagens da secretaria',
+                icone: 'fa-comments', tela: 'tela-mensagens', pagina: sec ? 'secretaria.html' : 'home.html'
+            });
+        }
         atualizarContador();
         ligarTempoReal();
         let tique = 0;

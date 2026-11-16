@@ -106,7 +106,11 @@ async function reconciliarComunicadosDoDia() {
 
 // Comunicados da tela do professor dependem só do banco: rodam sempre, mesmo que o e-mail
 // esteja lento ou fora do ar (antes, o envio de e-mails travava esta rotina).
+// "Batimento" do agendador, mostrado na tela Saúde do sistema.
+const estado = { iniciadoEm: null, ultimaVerificacao: null };
+
 async function verificarAtrasos() {
+    estado.ultimaVerificacao = new Date();
     if (verificandoAtrasos) return;
     verificandoAtrasos = true;
     try {
@@ -118,6 +122,8 @@ async function verificarAtrasos() {
     }
     // O envio de e-mails tem trava própria e roda em segundo plano, sem segurar a rotina acima.
     processarAlertas().catch(erro => console.error('[agendador] Erro ao processar alertas por e-mail:', erro));
+    // Mensagens do chat sem leitura há alguns minutos: aviso por e-mail.
+    require('./avisosChat').processarAvisosChat().catch(erro => console.error('[agendador] Erro nos avisos do chat:', erro));
 }
 
 // --------------------------------------------------------
@@ -138,7 +144,16 @@ function iniciarAgendador() {
     reconciliarComunicadosDoDia();
     setInterval(reconciliarComunicadosDoDia, 5 * 60 * 1000);
 
+    // Backup automático diário (confere de hora em hora) e limpeza dos códigos de login antigos.
+    const rotinaDiaria = () => {
+        require('./backup').backupDiarioSePreciso().catch(e => console.error('[agendador] backup:', e.message));
+        require('../model/doisFatoresModel').limparAntigos().catch(() => {});
+    };
+    setTimeout(rotinaDiaria, 60 * 1000);
+    setInterval(rotinaDiaria, 60 * 60 * 1000);
+    estado.iniciadoEm = new Date();
+
     console.log('[agendador] Rotinas de pedidos recorrentes e alerta de atraso iniciadas.');
 }
 
-module.exports = { iniciarAgendador, gerarPedidosRecorrentesDoDia, verificarAtrasos, reconciliarComunicadosDoDia };
+module.exports = { estado, iniciarAgendador, gerarPedidosRecorrentesDoDia, verificarAtrasos, reconciliarComunicadosDoDia };

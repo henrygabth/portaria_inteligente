@@ -2,6 +2,7 @@
 // Chamar o Model
 const alunos = require('../model/alunosModel');
 const responsaveisAlunosModel = require('../model/responsaveisAlunosModel');
+const { registrar: auditar } = require('../utils/auditoria');
 
 // A foto chega já recortada em 3x4 e comprimida pelo navegador (JPEG, poucas dezenas de KB).
 // Aqui o servidor só confere o tamanho e o tipo REAL do arquivo (assinatura JPEG), sem confiar
@@ -12,7 +13,47 @@ const ehJpeg = b => Buffer.isBuffer(b) && b.length > 4 && b[0] === 0xFF && b[1] 
 // Professor não vê (não faz parte do fluxo de identificação).
 const PAPEIS_VEEM_FOTO = ['SECRETARIA', 'ADMIN', 'PORTARIA', 'PORTEIRO'];
 
+const { conferir } = require('../utils/importarAlunos');
+const turmasModel = require('../model/turmasModel');
+
 const alunosController = {
+    // Importação por planilha. simular=true só confere (prévia); false grava os novos.
+    importar: async (req, res) => {
+        try {
+            const { linhas, simular, criarTurmas } = req.body || {};
+            const turmas = await turmasModel.listarTodas();
+            const existentes = await alunos.chavesExistentes();
+            const resultado = conferir(linhas, turmas, { ...existentes, criarTurmas: !!criarTurmas });
+            const resumo = { novos: 0, existentes: 0, erros: 0 };
+            resultado.forEach(r => { resumo[r.situacao === 'novo' ? 'novos' : r.situacao === 'existe' ? 'existentes' : 'erros']++; });
+            if (simular) return res.json({ resumo, linhas: resultado });
+
+            const criadas = new Map();
+            let gravados = 0;
+            for (const r of resultado.filter(x => x.situacao === 'novo')) {
+                let turmaId = r.turma_id;
+                if (!turmaId) {
+                    const chave = r.turma.toLowerCase();
+                    if (!criadas.has(chave)) criadas.set(chave, await turmasModel.cadastrar(r.turma, 'INTEGRAL'));
+                    turmaId = criadas.get(chave);
+                }
+                const matricula = r.matricula || `IMP-${Date.now().toString(36)}-${r.linha}`;
+                try {
+                    await alunos.cadastrar(r.nome, matricula, turmaId, r.data_nascimento, 'ATIVO', new Date());
+                    gravados++; r.situacao = 'criado';
+                } catch (e) {
+                    r.situacao = 'erro'; r.motivo = e.code === 'ER_DUP_ENTRY' ? 'Matrícula já usada por outro aluno.' : 'Não foi possível gravar esta linha.';
+                }
+            }
+            auditar(req, 'ALUNOS_IMPORTADOS', { alvo_tipo: 'ALUNO', descricao: `Importou ${gravados} aluno(s) por planilha${criadas.size ? ` e criou ${criadas.size} turma(s)` : ''}` });
+            return res.status(201).json({ resumo: { ...resumo, gravados, turmasCriadas: criadas.size }, linhas: resultado });
+        } catch (error) {
+            if (error.status) return res.status(error.status).json({ erro: error.message });
+            console.error('Erro ao importar alunos:', error);
+            return res.status(500).json({ erro: 'Erro ao importar a planilha.' });
+        }
+    },
+
     cadastrar: async (req, res) => {
         try {
             const { nome, matricula, turma_id, data_nascimento, status, data_criacao } = req.body;
@@ -22,6 +63,7 @@ const alunosController = {
             const aluno_id = await alunos.cadastrar(
                 nome, matricula, turma_id, data_nascimento, status, data_criacao
             );
+            auditar(req, 'ALUNO_CRIADO', { alvo_tipo: 'ALUNO', alvo_id: aluno_id, descricao: `Cadastrou o aluno ${nome} (matrícula ${matricula})` });
             return res.status(200).json({ "mensagem": `Aluno ${aluno_id} cadastrado com sucesso` });
         } catch (error) {
             console.log(error);
@@ -40,6 +82,7 @@ const alunosController = {
             const [aluno] = await alunos.buscarPorId(aluno_id);
             if (!aluno) return res.status(404).json({ erro: 'Aluno não encontrado.' });
             await alunos.salvarFoto(aluno_id, 'image/jpeg', dados, req.usuario.id_usuario);
+            auditar(req, 'FOTO_ALUNO', { alvo_tipo: 'ALUNO', alvo_id: aluno_id, descricao: `Enviou a foto de ${aluno.nome}` });
             return res.status(200).json({ mensagem: 'Foto salva com sucesso.' });
         } catch (error) {
             console.error('Erro ao salvar foto do aluno:', error);
@@ -91,6 +134,7 @@ const alunosController = {
                 nome, matricula, turma_id, data_nascimento, status, data_criacao, aluno_id
             );
             if (resultado > 0) {
+                auditar(req, 'ALUNO_ALTERADO', { alvo_tipo: 'ALUNO', alvo_id: aluno_id, descricao: `Alterou o cadastro do aluno ${nome || '#' + aluno_id}` });
                 return res.status(200).json({ "mensagem": `Aluno ${aluno_id} atualizado com sucesso` });
             } else {
                 return res.status(404).json({ "erro": "Aluno não encontrado" });
@@ -103,8 +147,10 @@ const alunosController = {
     apagar: async (req, res) => {
         try {
             const id = req.params.id;
+            const [antes] = await alunos.buscarPorId(id).catch(() => [null]);
             const resultado = await alunos.apagar(id);
             if (resultado) {
+                auditar(req, 'ALUNO_APAGADO', { alvo_tipo: 'ALUNO', alvo_id: id, descricao: `Apagou o aluno ${antes ? antes.nome : '#' + id}` });
                 res.status(200).json({ "resultado": "Removido" });
             } else {
                 res.status(204).send();
@@ -127,6 +173,7 @@ const alunosController = {
 
             const ok = await alunos.atualizarTurmaEStatus(aluno_id, turma_id || null, status || null);
             if (!ok) return res.status(404).json({ erro: "Aluno não encontrado." });
+            auditar(req, 'ALUNO_ALTERADO', { alvo_tipo: 'ALUNO', alvo_id: aluno_id, descricao: `Alterou ${[turma_id ? 'a turma' : null, status ? `a situação (${status})` : null].filter(Boolean).join(' e ')} do aluno #${aluno_id}` });
             res.json({ mensagem: "Aluno atualizado com sucesso." });
         } catch (error) {
             console.error('Erro ao atualizar turma/status do aluno:', error);

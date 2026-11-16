@@ -11,21 +11,25 @@
     // [ícone, texto, página, tela dentro da página (ou null), somente ADMIN]
     const SECRETARIA = [
         ['fa-th-large', 'Início', 'secretaria.html', 'tela-inicio'],
-        ['fa-chart-line', 'Painel', 'secretaria.html', 'tela-painel'],
+        ['fa-chart-line', 'Relatórios', 'secretaria.html', 'tela-painel'],
         ['fa-bell', 'Solicitações', 'secretaria.html', 'tela-solicitacoes'],
         ['fa-comments', 'Mensagens', 'secretaria.html', 'tela-mensagens'],
+        ['fa-headset', 'Chat com a Portaria', 'secretaria.html', 'tela-equipe'],
         ['fa-user-plus', 'Vincular Responsável', 'secretaria.html', 'tela-vincular'],
         ['fa-user-graduate', 'Gerenciar Alunos', 'secretaria.html', 'tela-alunos'],
         ['fa-users-gear', 'Gerenciar Perfis', 'secretaria.html', 'tela-perfis'],
         ['fa-chalkboard-user', 'Professores e Turmas', 'professores-admin.html', null],
         ['fa-history', 'Histórico', 'secretaria.html', 'tela-historico'],
+        ['fa-clipboard-check', 'Auditoria', 'secretaria.html', 'tela-auditoria'],
+        ['fa-heart-pulse', 'Saúde do Sistema', 'secretaria.html', 'tela-saude'],
         ['fa-arrow-right-arrow-left', 'Trocar de Painel', 'selecionar-painel.html', null, true]
     ];
     const PORTARIA = [
         ['fa-id-card', 'Início', 'portaria.html', 'tela-inicio'],
         ['fa-door-open', 'Saídas', 'portaria.html', 'tela-saidas'],
         ['fa-undo', 'Registrar Retorno', 'portaria.html', 'tela-retorno'],
-        ['fa-clipboard-list', 'Histórico', 'portaria.html', 'tela-historico']
+        ['fa-clipboard-list', 'Histórico', 'portaria.html', 'tela-historico'],
+        ['fa-headset', 'Chat com a Secretaria', 'portaria.html', 'tela-equipe']
     ];
     const PROFESSOR = [
         ['fa-chalkboard-user', 'Minhas Turmas', 'professor.html', 'tela-painel'],

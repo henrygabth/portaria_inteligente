@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     senha          VARCHAR(255) NOT NULL,
     tipo_usuario   ENUM('PAI', 'SECRETARIA', 'PORTARIA', 'PORTEIRO', 'ADMIN', 'PROFESSOR') NOT NULL,
     status         VARCHAR(20) DEFAULT '1',          -- '1' = ativo, '0' = perfil desativado
-    primeiro_acesso TINYINT(1) NOT NULL DEFAULT 1,   -- 1 até o primeiro login (sugere troca de senha)
+    primeiro_acesso TINYINT(1) NOT NULL DEFAULT 1,   -- 1 até trocar a senha temporária (troca obrigatória no 1º login)
     data_criacao   DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -122,3 +122,5 @@ ON DUPLICATE KEY UPDATE sala_turma = VALUES(sala_turma);
 -- 1) database/migration_professores_up.sql
 -- 2) database/migration_ocorrencias_responsabilidade_up.sql
 -- As migrations usam CREATE TABLE IF NOT EXISTS e preservam os dados existentes.
+-- 3) database/migration_seguranca_up.sql (versão do token: derruba sessões ao trocar a senha)
+-- 4) database/migration_notificacoes_equipe_up.sql (aviso por e-mail de mensagem não lida e chat secretaria <-> portaria)

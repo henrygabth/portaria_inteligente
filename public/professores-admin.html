@@ -4,14 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0A192F">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icones/icone-192.png">
+    <link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portaria">
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <script src="/js/general/pwa.js" defer></script>
     <title>Professores e Turmas - Administração</title>
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="./css/global.css?v=4" rel="stylesheet">
     <link href="./css/home.css?v=8" rel="stylesheet">
     <link href="./css/secretaria.css?v=5" rel="stylesheet">
-    <link href="./css/professor.css?v=3" rel="stylesheet">
-    <link href="./css/tema-escuro.css?v=1" rel="stylesheet">
+    <link href="./css/professor.css?v=4" rel="stylesheet">
+    <link href="./css/professores-admin.css?v=1" rel="stylesheet">
+    <link href="./css/tema-escuro.css?v=3" rel="stylesheet">
     <script src="./js/general/particulas.js?v=1"></script>
     <script src="./js/general/menu-lateral.js?v=1"></script>
 </head>
@@ -38,38 +48,84 @@
     <aside class="sidebar" id="sidebar" data-sidebar-auto></aside>
 
     <main class="main-content" id="mainContent">
-        <h1>Professores e Turmas</h1>
-
-        <div class="card">
-            <h2>Cadastrar professor</h2>
-            <p class="descricao-tela">O professor acessa com e-mail e senha próprios. Selecione uma ou mais turmas (ou vincule depois).</p>
-            <form id="formProfessor" class="form-grid">
-                <div class="input-group"><label for="nomeProf">Nome completo</label><input id="nomeProf" maxlength="150" required></div>
-                <div class="input-group"><label for="cpfProf">CPF (11 números)</label><input id="cpfProf" inputmode="numeric" maxlength="14" required></div>
-                <div class="input-group"><label for="emailProf">E-mail</label><input type="email" id="emailProf" maxlength="150" required></div>
-                <div class="input-group"><label for="telProf">Telefone (opcional)</label><input id="telProf" maxlength="20"></div>
-                <div class="input-group"><label for="senhaProf">Senha inicial (mínimo 8 caracteres)</label><input type="password" id="senhaProf" minlength="8" maxlength="72" required autocomplete="new-password"></div>
-                <div class="input-group full-width"><label for="turmasProf">Turmas (Ctrl/Cmd + clique para múltiplas)</label><select id="turmasProf" multiple size="5" class="filter-select"></select></div>
-                <div class="input-group full-width"><button class="btn-submit" type="submit"><i class="fas fa-user-plus"></i> Cadastrar professor</button></div>
-            </form>
-            <p id="msgCadastro" role="status"></p>
-        </div>
-
-        <div class="card">
-            <h2>Professores cadastrados</h2>
-            <p class="descricao-tela">Edite os vínculos sem mudar os dados dos alunos. As salas disponíveis são as turmas já cadastradas na secretaria.</p>
-            <div class="table-responsive">
-                <table class="history-table">
-                    <thead><tr><th>Professor</th><th>E-mail</th><th>Situação</th><th>Turmas</th><th>Ação</th></tr></thead>
-                    <tbody id="listaProfessores"><tr><td colspan="5">Carregando...</td></tr></tbody>
-                </table>
+        <header class="pa-cabecalho">
+            <div>
+                <h1>Professores e Turmas</h1>
+                <p class="descricao-tela">Cadastre os professores e escolha quais turmas cada um acompanha. O professor só vê os alunos e os avisos dessas turmas.</p>
             </div>
+            <div class="pa-resumo" id="paResumo" aria-live="polite"></div>
+        </header>
+
+        <div class="pa-grade">
+            <!-- ===================== NOVO PROFESSOR ===================== -->
+            <section class="card pa-form-card" aria-labelledby="tituloNovo">
+                <h2 id="tituloNovo"><i class="fas fa-user-plus"></i> Novo professor</h2>
+
+                <form id="formProfessor" novalidate>
+                    <fieldset class="pa-etapa">
+                        <legend><span class="pa-num">1</span> Dados do professor</legend>
+                        <div class="pa-campos">
+                            <div class="input-group pa-largo">
+                                <label for="nomeProf">Nome completo</label>
+                                <input id="nomeProf" maxlength="150" required placeholder="Ex.: Maria Aparecida Souza" autocomplete="off">
+                            </div>
+                            <div class="input-group">
+                                <label for="cpfProf">CPF</label>
+                                <input id="cpfProf" data-mask="cpf" inputmode="numeric" maxlength="14" required placeholder="000.000.000-00" autocomplete="off">
+                            </div>
+                            <div class="input-group">
+                                <label for="telProf">Telefone <span class="pa-opcional">opcional</span></label>
+                                <input id="telProf" data-mask="telefone" inputmode="tel" maxlength="20" placeholder="(19) 99999-9999" autocomplete="off">
+                            </div>
+                            <div class="input-group pa-largo">
+                                <label for="emailProf">E-mail <span class="pa-opcional">usado para entrar no sistema</span></label>
+                                <input type="email" id="emailProf" maxlength="150" required placeholder="professor@escola.com.br" autocomplete="off">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="pa-etapa">
+                        <legend><span class="pa-num">2</span> Senha de primeiro acesso</legend>
+                        <div class="pa-senha">
+                            <div class="input-group">
+                                <label for="senhaProf">Senha inicial</label>
+                                <input type="password" id="senhaProf" minlength="8" maxlength="72" required autocomplete="new-password" placeholder="Mín. 8, com letras e números">
+                            </div>
+                            <button type="button" class="pa-btn-sec" id="gerarSenha"><i class="fas fa-wand-magic-sparkles"></i> Gerar senha</button>
+                        </div>
+                        <p class="campo-ajuda">Entregue esta senha ao professor. No primeiro acesso o sistema sugere que ele troque em “Minha Conta”.</p>
+                    </fieldset>
+
+                    <fieldset class="pa-etapa">
+                        <legend><span class="pa-num">3</span> Turmas que ele acompanha <span class="pa-opcional">pode vincular depois</span></legend>
+                        <div class="pa-seletor" id="seletorNovo"></div>
+                    </fieldset>
+
+                    <p id="msgCadastro" class="pa-msg" role="status" hidden></p>
+                    <button class="btn-submit pa-enviar" type="submit" id="btnCadastrar"><i class="fas fa-user-plus"></i> Cadastrar professor</button>
+                </form>
+            </section>
+
+            <!-- ===================== PROFESSORES CADASTRADOS ===================== -->
+            <section class="card pa-lista-card" aria-labelledby="tituloLista">
+                <div class="pa-lista-topo">
+                    <h2 id="tituloLista"><i class="fas fa-chalkboard-user"></i> Professores cadastrados</h2>
+                    <div class="pa-busca">
+                        <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
+                        <input type="search" id="buscaProf" placeholder="Buscar por nome, e-mail ou turma" aria-label="Buscar professor">
+                    </div>
+                </div>
+                <div id="avisoSemProfessor" class="pa-aviso" hidden></div>
+                <ul class="pa-lista" id="listaProfessores">
+                    <li class="pa-vazio">Carregando...</li>
+                </ul>
+            </section>
         </div>
     </main>
 
-    <script src="./js/general/sessao.js?v=2"></script>
-    <script src="./js/general/layout.js?v=3"></script>
-    <script src="./js/general/professores-admin.js?v=2"></script>
+    <script src="./js/general/sessao.js?v=261114"></script>
+    <script src="./js/general/layout.js?v=261114"></script>
+    <script src="./js/general/professores-admin.js?v=3"></script>
     <script src="./js/general/ui-extras.js?v=1" defer></script>
 </body>
 

@@ -120,5 +120,43 @@ async function buscarResponsaveis(busca) {
     return rows;
 }
 
-module.exports = { inteiro, podeConversar, buscarMensagem, responsavelExiste, listarConversa, marcarLidas, enviadasUltimoMinuto,
+// ---------------------------------------------------------------- aviso por e-mail
+// Mensagens não lidas há mais de N minutos e ainda sem e-mail, agrupadas por conversa e direção.
+// Só entra a conversa cujo último e-mail (naquela direção) foi há mais de 30 minutos.
+async function pendentesDeAvisoEmail(minutos = 2, intervaloMin = 30) {
+    const [rows] = await db.query(`SELECT m.responsavel_id, m.de, COUNT(*) AS total, MAX(m.mensagem_id) AS ultimo_id,
+        SUBSTRING_INDEX(GROUP_CONCAT(m.texto ORDER BY m.mensagem_id DESC SEPARATOR '\u0001'), '\u0001', 1) AS ultimo_texto,
+        u.nome AS responsavel_nome, u.email AS responsavel_email,
+        (SELECT GROUP_CONCAT(a.nome ORDER BY a.nome SEPARATOR ', ') FROM responsaveis_alunos ra JOIN alunos a ON a.aluno_id = ra.aluno_id
+           WHERE ra.usuario_id = m.responsavel_id) AS alunos
+      FROM chat_mensagens m JOIN usuarios u ON u.id_usuario = m.responsavel_id
+      LEFT JOIN chat_avisos_email av ON av.responsavel_id = m.responsavel_id
+           AND av.direcao = IF(m.de = 'SECRETARIA', 'PARA_RESPONSAVEL', 'PARA_SECRETARIA')
+      WHERE m.lida = 0 AND m.email_avisado = 0
+        AND m.criado_em < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        AND m.criado_em > DATE_SUB(NOW(), INTERVAL 1 DAY)
+        AND (av.enviado_em IS NULL OR av.enviado_em < DATE_SUB(NOW(), INTERVAL ? MINUTE))
+        AND (u.status IS NULL OR u.status NOT IN ('0','INATIVO','DESATIVADO'))
+      GROUP BY m.responsavel_id, m.de, u.nome, u.email
+      LIMIT 50`, [minutos, intervaloMin]);
+    return rows.map(r => ({ ...r, total: Number(r.total) || 0 }));
+}
+
+// Marca as mensagens daquela conversa/direção como avisadas e registra o horário do e-mail.
+async function registrarAvisoEmail(responsavelId, de, ateId) {
+    await db.query(`UPDATE chat_mensagens SET email_avisado = 1
+      WHERE responsavel_id = ? AND de = ? AND mensagem_id <= ? AND email_avisado = 0`, [responsavelId, de, ateId]);
+    const direcao = de === 'SECRETARIA' ? 'PARA_RESPONSAVEL' : 'PARA_SECRETARIA';
+    await db.query(`INSERT INTO chat_avisos_email (responsavel_id, direcao, enviado_em) VALUES (?, ?, NOW())
+      ON DUPLICATE KEY UPDATE enviado_em = NOW()`, [responsavelId, direcao]);
+}
+
+// Quem recebe o aviso do lado da escola: secretárias ativas com e-mail.
+async function emailsSecretaria() {
+    const [rows] = await db.query(`SELECT email, nome FROM usuarios WHERE UPPER(tipo_usuario) = 'SECRETARIA'
+      AND email IS NOT NULL AND email <> '' AND (status IS NULL OR status NOT IN ('0','INATIVO','DESATIVADO'))`);
+    return rows;
+}
+
+module.exports = { pendentesDeAvisoEmail, registrarAvisoEmail, emailsSecretaria, inteiro, podeConversar, buscarMensagem, responsavelExiste, listarConversa, marcarLidas, enviadasUltimoMinuto,
     enviar, naoLidasResponsavel, naoLidasSecretaria, listarConversas, buscarResponsaveis };

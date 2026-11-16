@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0A192F">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icones/icone-192.png">
+    <link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portaria">
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <link rel="stylesheet" href="/css/recursos.css?v=2">
+    <script src="/js/general/pwa.js" defer></script>
+    <title>Defina sua senha - Portaria Inteligente</title>
+    <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/style.css?v=5">
+    <link rel="stylesheet" href="./css/trocar-senha.css?v=1">
+    <script src="./js/general/particulas.js?v=1"></script>
+</head>
+<body class="centralize" data-fundo="gradiente">
+    <form id="formPrimeiraSenha" class="ts-cartao" novalidate>
+        <div class="ts-topo">
+            <span class="ts-icone"><i class="fas fa-shield-halved"></i></span>
+            <h1>Defina sua senha</h1>
+            <p>Olá<span id="tsNome"></span>! Este é o seu primeiro acesso. Por segurança, troque a senha temporária que você recebeu por uma senha só sua.</p>
+        </div>
+
+        <div class="form-field">
+            <label for="senhaAtual">Senha temporária</label>
+            <input type="password" id="senhaAtual" autocomplete="current-password" required placeholder="A senha que você recebeu">
+        </div>
+        <div class="form-field">
+            <label for="novaSenha">Nova senha</label>
+            <input type="password" id="novaSenha" minlength="8" maxlength="72" autocomplete="new-password" required placeholder="Crie uma senha forte">
+            <div class="ts-forca" aria-hidden="true"><span id="tsBarra"></span></div>
+            <ul class="ts-regras" id="tsRegras">
+                <li data-regra="tamanho"><i class="fas fa-circle"></i> Pelo menos 8 caracteres</li>
+                <li data-regra="letra"><i class="fas fa-circle"></i> Uma letra</li>
+                <li data-regra="numero"><i class="fas fa-circle"></i> Um número</li>
+                <li data-regra="diferente"><i class="fas fa-circle"></i> Diferente da senha temporária</li>
+            </ul>
+        </div>
+        <div class="form-field">
+            <label for="confirmarSenha">Confirme a nova senha</label>
+            <input type="password" id="confirmarSenha" maxlength="72" autocomplete="new-password" required placeholder="Repita a nova senha">
+        </div>
+
+        <label class="ts-termos"><input type="checkbox" id="tsTermos" required>
+            <span>Li e aceito o <a href="politica-privacidade.html" target="_blank" rel="noopener">termo de uso e a política de privacidade<span class="sr-only"> (abre em nova aba)</span></a>.</span></label>
+
+        <p class="ts-msg" id="tsMsg" role="alert" hidden></p>
+        <button type="submit" class="enter-btn" id="tsSalvar">Salvar e entrar</button>
+        <button type="button" class="clear" id="tsSair">Sair</button>
+    </form>
+    <script src="./js/general/trocar-senha.js?v=2"></script>
+    <script src="./js/general/ui-extras.js?v=1" defer></script>
+</body>
+</html>

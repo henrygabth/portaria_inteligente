@@ -4,14 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0A192F">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icones/icone-192.png">
+    <link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portaria">
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <script src="/js/general/pwa.js" defer></script>
     <title>Dashboard - Solicitações</title>
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="./css/home.css?v=8" rel="stylesheet">
     <link href="./css/global.css?v=4" rel="stylesheet">
-    <link href="./css/casa-chat.css?v=2" rel="stylesheet">
+    <link href="./css/casa-chat.css?v=9" rel="stylesheet">
     <link href="./css/foto-aluno.css?v=1" rel="stylesheet">
-    <link href="./css/tema-escuro.css?v=1" rel="stylesheet">
+    <link href="./css/recursos.css?v=2" rel="stylesheet">
+    <link href="./css/tema-escuro.css?v=3" rel="stylesheet">
     <script src="./js/general/particulas.js?v=1"></script>
     <script src="./js/general/menu-lateral.js?v=1"></script>
 </head>
@@ -29,7 +39,7 @@
         <div class="logo">
             <a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a>
         </div>
-        <button id="themeToggle">
+        <button id="themeToggle" aria-label="Alternar tema claro ou escuro" title="Tema claro/escuro">
             <i class="fas fa-moon"></i>
         </button>
     </nav>
@@ -285,7 +295,7 @@
 
                     <div class="input-group">
                         <label for="novaSenha">Nova Senha</label>
-                        <input type="password" id="novaSenha" placeholder="Deixe em branco para manter">
+                        <input type="password" id="novaSenha" placeholder="Deixe em branco para manter (mín. 8, letras e números)" minlength="8" maxlength="72" autocomplete="new-password">
                     </div>
 
                     <div class="form-actions full-width" style="margin-top: 10px;">
@@ -295,14 +305,18 @@
                     </div>
                 </form>
             </div>
+            <div data-privacidade></div>
         </section>
     </main>
 
-    <script src="./js/general/sessao.js?v=1"></script>
+    <script src="./js/general/sessao.js?v=261114"></script>
+    <script src="./js/general/push-cliente.js?v=1"></script>
     <script src="./js/general/foto-aluno.js?v=1"></script>
     <script src="./js/general/tempo-real.js?v=1"></script>
-    <script src="./js/general/chat.js?v=3"></script>
-    <script src="./js/general/home.js?v=7"></script>
+    <script src="./js/general/notificacoes.js?v=2"></script>
+    <script src="./js/general/chat.js?v=4"></script>
+    <script src="./js/general/home.js?v=261114"></script>
+    <script src="./js/general/privacidade.js?v=1"></script>
     <script src="./js/general/ui-extras.js?v=1" defer></script>
 </body>
 </html>

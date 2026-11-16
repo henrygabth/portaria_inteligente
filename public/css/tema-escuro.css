@@ -141,3 +141,9 @@
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: #2a3855; border-radius: 8px; border: 2px solid #0b1220; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: #3a4d73; }
 [data-theme="dark"] * { scrollbar-color: #2a3855 #0b1220; }
+
+/* ===== componentes novos (auditoria e avisos no celular) no tema escuro ===== */
+[data-theme="dark"] .saude-so-admin { color: #afc0da; }
+[data-theme="dark"] .aud-identificacao_nao_confere, [data-theme="dark"] .aud-login_2fa_falhou { background: #3a2a12; }
+[data-theme="dark"] .push-estado.push-negado, [data-theme="dark"] .push-estado.push-indisponivel, [data-theme="dark"] .push-estado.push-instalar-ios { background: #3a2a12; color: #ffd8a8; }
+[data-theme="dark"] .push-estado.push-ativo { background: #12351f; color: #a7f3c0; }

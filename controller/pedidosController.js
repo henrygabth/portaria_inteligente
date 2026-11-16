@@ -6,6 +6,15 @@ const { enviarEmail } = require('../utils/email');
 const { montarEmailHtml } = require('../utils/emailTemplate');
 const { avisarTodos, retornouAtrasado } = require('../utils/alertasEmail');
 const ocorrenciasModel = require('../model/ocorrenciasModel');
+const { escaparHtml, idPositivo } = require('../utils/seguranca');
+const { registrar: auditar } = require('../utils/auditoria');
+
+// Data/hora vinda do navegador ("2026-11-14T12:30" ou "2026-11-14 12:30[:00]").
+function dataHoraValida(valor) {
+    if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(:\d{2})?$/.test(valor.trim())) return null;
+    const d = new Date(valor.trim().replace(' ', 'T'));
+    return Number.isNaN(d.getTime()) ? null : d;
+}
 
 // Garante que o pedido está no status esperado antes de seguir para a próxima etapa
 // (Pai -> Secretaria -> Portaria). Sem isso, a portaria conseguia liberar um pedido
@@ -33,9 +42,9 @@ function montarEmailNegativa({ nomeAluno, nomeResponsavel, motivo, quem }) {
         text: `Olá ${nomeResponsavel}, a solicitação de saída de ${nomeAluno} foi ${acao}. Motivo: ${motivo}`,
         html: montarEmailHtml({
             titulo: `Solicitação de saída ${cancelada ? 'cancelada' : 'recusada'}`,
-            saudacao: `Olá, <strong>${nomeResponsavel}</strong>.`,
-            paragrafos: [`A solicitação de saída de <strong>${nomeAluno}</strong> foi ${acao}.`],
-            destaque: `<p style="margin: 0; color: #2d3748; font-size: 13px;"><strong>Motivo:</strong> ${motivo}</p>`,
+            saudacao: `Olá, <strong>${escaparHtml(nomeResponsavel)}</strong>.`,
+            paragrafos: [`A solicitação de saída de <strong>${escaparHtml(nomeAluno)}</strong> foi ${acao}.`],
+            destaque: `<p style="margin: 0; color: #2d3748; font-size: 13px;"><strong>Motivo:</strong> ${escaparHtml(motivo)}</p>`,
             cor: 'vermelho'
         })
     };
@@ -63,6 +72,28 @@ const pedidosController = {
 
             if (!aluno_id || !hora_prevista_saida) {
                 return res.status(400).json({ erro: "Campos obrigatórios não preenchidos" });
+            }
+            if (!idPositivo(aluno_id) || !idPositivo(solicitante_id)) {
+                return res.status(400).json({ erro: "Aluno inválido." });
+            }
+            const saida = dataHoraValida(hora_prevista_saida);
+            if (!saida) return res.status(400).json({ erro: "Horário de saída inválido." });
+            // Tolerância de 10 min para relógio do celular um pouco atrasado.
+            if (saida.getTime() < Date.now() - 10 * 60 * 1000) {
+                return res.status(400).json({ erro: "O horário de saída já passou. Informe um horário futuro." });
+            }
+            if (saida.getTime() > Date.now() + 60 * 24 * 60 * 60 * 1000) {
+                return res.status(400).json({ erro: "Só é possível agendar saídas para os próximos 60 dias." });
+            }
+            if (hora_prevista_retorno) {
+                const retorno = dataHoraValida(hora_prevista_retorno);
+                if (!retorno) return res.status(400).json({ erro: "Horário de retorno inválido." });
+                if (retorno.getTime() - saida.getTime() > 12 * 60 * 60 * 1000) {
+                    return res.status(400).json({ erro: "O retorno deve ser no mesmo dia da saída." });
+                }
+            }
+            if (observacoes && String(observacoes).length > 500) {
+                return res.status(400).json({ erro: "As observações devem ter no máximo 500 caracteres." });
             }
 
             // Liberação para casa: o motivo da saída é obrigatório (a secretaria e a portaria o veem).
@@ -96,7 +127,7 @@ const pedidosController = {
             res.status(201).json({ mensagem: `Pedido ${pedido_id} criado com sucesso e enviado à secretaria`, id_pedido: pedido_id });
         } catch (error) {
             console.error('Erro ao cadastrar pedido:', error);
-            res.status(500).json({ erro: "Erro ao cadastrar pedido", detalhe: error.message });
+            res.status(500).json({ erro: "Erro ao cadastrar pedido" });
         }
     },
 
@@ -108,6 +139,7 @@ const pedidosController = {
             if (!(await exigirStatus(res, pedido_id, 'PENDENTE', "Este pedido já foi analisado. Atualize a lista de solicitações."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'APROVADA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
+            auditar(req, 'PEDIDO_APROVADO', { alvo_tipo: 'PEDIDO', alvo_id: pedido_id, descricao: `Aprovou a saída do pedido #${pedido_id}` });
             res.json({ mensagem: "Pedido aprovado com sucesso e enviado para a portaria" });
         } catch (error) {
             console.error('Erro ao aprovar pedido:', error);
@@ -122,13 +154,14 @@ const pedidosController = {
             const usuario_id = req.usuario.id_usuario;
             const { observacao } = req.body;
 
-            if (!observacao || !observacao.trim()) {
-                return res.status(400).json({ erro: "Informe o motivo da recusa." });
+            if (typeof observacao !== 'string' || !observacao.trim() || observacao.trim().length > 500) {
+                return res.status(400).json({ erro: "Informe o motivo da recusa (até 500 caracteres)." });
             }
 
             if (!(await exigirStatus(res, pedido_id, 'PENDENTE', "Este pedido já foi analisado. Atualize a lista de solicitações."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'RECUSADA', usuario_id, observacao);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
+            auditar(req, 'PEDIDO_RECUSADO', { alvo_tipo: 'PEDIDO', alvo_id: pedido_id, descricao: `Recusou o pedido #${pedido_id}. Motivo: ${observacao.trim()}` });
 
             let emailEnviado = true;
             try {
@@ -140,7 +173,7 @@ const pedidosController = {
                         motivo: observacao,
                         quem: 'SECRETARIA'
                     });
-                    await enviarEmail({ to: dados.responsavel_email, subject, text, html });
+                    await enviarEmail({ to: dados.responsavel_email, subject, text, html, tag: 'pedido-negado', tentativas: 2 });
                 }
             } catch (erroEmail) {
                 console.error('Erro ao enviar e-mail de recusa:', erroEmail);
@@ -166,6 +199,7 @@ const pedidosController = {
             if (!(await exigirStatus(res, pedido_id, 'APROVADA', "A portaria só pode registrar a saída de pedidos já aprovados pela secretaria e que ainda não saíram."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'EM_SAIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
+            auditar(req, 'SAIDA_REGISTRADA', { alvo_tipo: 'PEDIDO', alvo_id: pedido_id, descricao: `Registrou a saída do pedido #${pedido_id} (identidade conferida pela foto)` });
 
             // Avisa responsáveis, secretaria, portaria e professores da turma, sem segurar a resposta da portaria
             let paraCasa = false;
@@ -189,6 +223,7 @@ const pedidosController = {
             if (!(await exigirStatus(res, pedido_id, 'EM_SAIDA', "Só é possível registrar o retorno de alunos que estão fora da escola."))) return;
             const ok = await pedidos.atualizarStatus(pedido_id, 'CONCLUIDA', usuario_id);
             if (!ok) return res.status(404).json({ erro: "Pedido não encontrado" });
+            auditar(req, 'RETORNO_REGISTRADO', { alvo_tipo: 'PEDIDO', alvo_id: pedido_id, descricao: `Registrou o retorno do pedido #${pedido_id}` });
 
             // Retorno no prazo ou com atraso: todos os grupos recebem o aviso correspondente.
             void (async () => {
@@ -225,6 +260,7 @@ const pedidosController = {
             }
 
             await pedidos.atualizarStatus(pedido_id, 'CANCELADA', usuario_id, observacao);
+            auditar(req, 'PEDIDO_CANCELADO', { alvo_tipo: 'PEDIDO', alvo_id: pedido_id, descricao: `Cancelou o pedido #${pedido_id}. Motivo: ${observacao.trim()}` });
 
             let emailEnviado = true;
             try {
@@ -236,7 +272,7 @@ const pedidosController = {
                         motivo: observacao,
                         quem: 'CANCELAMENTO'
                     });
-                    await enviarEmail({ to: dados.responsavel_email, subject, text, html });
+                    await enviarEmail({ to: dados.responsavel_email, subject, text, html, tag: 'pedido-negado', tentativas: 2 });
                 }
             } catch (erroEmail) {
                 console.error('Erro ao enviar e-mail de cancelamento:', erroEmail);
@@ -276,7 +312,8 @@ const pedidosController = {
     // 6b. SECRETARIA: histórico geral (tudo que já foi decidido ou seguiu para a portaria)
     historicoGeral: async (req, res) => {
         try {
-            const resultado = await pedidos.buscarHistoricoGeral(req.query.limite);
+            const limite = Math.min(Math.max(Number(req.query.limite) || 300, 1), 1000);
+            const resultado = await pedidos.buscarHistoricoGeral(limite);
             res.json(resultado);
         } catch (error) {
             console.error('Erro ao buscar histórico geral:', error);
@@ -360,7 +397,7 @@ const pedidosController = {
         try {
             const hoje = new Date();
             const hojeLocal = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
-            const data = req.query.data || hojeLocal;
+            const data = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.data || '')) ? req.query.data : hojeLocal;
             const resultado = await pedidos.obterEstatisticas(data);
             res.json(resultado);
         } catch (error) {

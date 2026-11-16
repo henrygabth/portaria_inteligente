@@ -141,6 +141,8 @@ async function painel(professorId) {
     // Uma linha por aluno, cada um associado SOMENTE às turmas vinculadas ao docente.
     // O pedido mais relevante do dia prevalece: quem está fora > saída autorizada (ainda na escola)
     // > quem já voltou hoje. Traz previsto x real para o professor saber quando sai/volta e se atrasou.
+    // O sistema não registra a chegada dos alunos: sem pedido no dia a situação é SEM_SAIDA
+    // ("sem saída registrada hoje"), e não "na escola", que seria uma afirmação sem base.
     const [rows] = await db.query(`SELECT a.aluno_id, a.nome, a.matricula, t.id_turma,
       t.sala_turma AS turma, p.pedidos_saida_id AS pedido_id, p.status AS status_pedido, p.tipo, p.motivo,
       p.hora_prevista_saida, p.hora_saida_real, p.hora_prevista_retorno, p.hora_retorno_real,
@@ -164,7 +166,7 @@ async function painel(professorId) {
         WHEN p.status = 'CONCLUIDA' AND p.hora_prevista_retorno IS NOT NULL
           AND p.hora_retorno_real > DATE_ADD(p.hora_prevista_retorno, INTERVAL 5 MINUTE) THEN 'RETORNOU_ATRASADO'
         WHEN p.status = 'CONCLUIDA' THEN 'RETORNOU'
-        ELSE 'DENTRO'
+        ELSE 'SEM_SAIDA'
       END AS situacao
       FROM alunos a JOIN turmas t ON t.id_turma = a.turma_id
       JOIN professores_turmas pt ON pt.turma_id = t.id_turma AND pt.professor_id = ?

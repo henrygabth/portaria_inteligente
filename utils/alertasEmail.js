@@ -12,7 +12,9 @@ const pedidos = require('../model/pedidosModel');
 const alertas = require('../model/alertasEmailModel');
 const ocorrencias = require('../model/ocorrenciasModel');
 
-const TOLERANCIA_MIN = 5; // mesma tolerância usada em toda a aplicação
+const TOLERANCIA_MIN = 5;
+// Carregado só quando usado (evita dependência circular com o pedidosModel).
+const avisosPush = () => require('./avisosPush'); // mesma tolerância usada em toda a aplicação
 
 // Eventos de movimentação normal: continuam valendo mesmo que o aluno já tenha voltado
 // quando o e-mail for finalmente entregue (ex.: Brevo ficou fora do ar por alguns minutos).
@@ -164,6 +166,7 @@ async function rodarFila() {
         } catch (erro) {
             console.error(`[ocorrencias] Falha ao registrar ${ev.tipo} do pedido ${ev.pedido_id}:`, erro.message);
         }
+        avisosPush().avisarPedido(ev.pedido_id, ev.tipo); // celular: atraso e não retorno
         try {
             await alertas.enfileirar(ev.pedido_id, ev.tipo);
         } catch (erro) {
@@ -171,33 +174,66 @@ async function rodarFila() {
         }
     }
     const pendentes = await alertas.listarEnviosPendentes();
-    for (const item of pendentes) {
-        if (!(await alertas.reservarEnvio(item.envio_id))) continue;
-        try {
-            const pedido = await pedidos.buscarParaNotificacao(item.pedido_id);
-            if (!pedido) throw new Error('Pedido não encontrado ao enviar alerta.');
-            // Aviso de atraso/não retorno não faz sentido depois que o aluno já voltou.
-            if (!TIPOS_INFORMATIVOS.includes(item.tipo_evento) && pedido.status !== 'EM_SAIDA') {
-                await alertas.descartarEnvio(item.envio_id, 'Aluno já retornou à escola.');
-                continue;
-            }
-            if (!(await alertas.destinatarioAindaAutorizado(item, pedido))) {
-                await alertas.descartarEnvio(item.envio_id, 'Professor não está mais vinculado à turma.');
-                continue;
-            }
-            await enviarEmail({ to: item.email_destino, ...mensagem(item.tipo_evento, pedido, item.categoria) });
-            await alertas.concluirEnvio(item.envio_id);
-        } catch (erro) {
-            console.error(`[alertas] Envio ${item.envio_id} falhou:`, erro.message);
-            try { await alertas.falharEnvio(item.envio_id, erro); }
-            catch (erroBanco) { console.error('[alertas] Falha ao registrar tentativa:', erroBanco.message); }
+    // Envia em paralelo (poucos de cada vez): antes era um por um, e com 20-30 destinatários por
+    // evento o último e-mail chegava minutos depois do primeiro.
+    let proximo = 0;
+    const trabalhador = async () => {
+        while (proximo < pendentes.length) {
+            const item = pendentes[proximo++];
+            await enviarItem(item);
         }
+    };
+    await Promise.all(Array.from({ length: Math.min(CONCORRENCIA, pendentes.length) }, trabalhador));
+    if (pendentes.length) await conferirCota();
+}
+
+const CONCORRENCIA = Math.max(1, Math.min(Number(process.env.EMAIL_CONCORRENCIA) || 4, 10));
+
+async function enviarItem(item) {
+    if (!(await alertas.reservarEnvio(item.envio_id))) return;
+    try {
+        const pedido = await pedidos.buscarParaNotificacao(item.pedido_id);
+        if (!pedido) throw Object.assign(new Error('Pedido não encontrado ao enviar alerta.'), { permanente: true });
+        // Aviso de atraso/não retorno não faz sentido depois que o aluno já voltou.
+        if (!TIPOS_INFORMATIVOS.includes(item.tipo_evento) && pedido.status !== 'EM_SAIDA') {
+            await alertas.descartarEnvio(item.envio_id, 'Aluno já retornou à escola.');
+            return;
+        }
+        if (!(await alertas.destinatarioAindaAutorizado(item, pedido))) {
+            await alertas.descartarEnvio(item.envio_id, 'Professor não está mais vinculado à turma.');
+            return;
+        }
+        // A fila já tem a própria espera entre tentativas: aqui só 2 tentativas rápidas.
+        await enviarEmail({ to: item.email_destino, tag: `alerta-${item.tipo_evento.toLowerCase()}`, tentativas: 2, ...mensagem(item.tipo_evento, pedido, item.categoria) });
+        await alertas.concluirEnvio(item.envio_id);
+    } catch (erro) {
+        console.error(`[alertas] Envio ${item.envio_id} (${item.tipo_evento} -> ${item.email_destino}) falhou${erro.permanente ? ' de forma permanente' : ''}:`, erro.message);
+        try { await alertas.falharEnvio(item.envio_id, erro); }
+        catch (erroBanco) { console.error('[alertas] Falha ao registrar tentativa:', erroBanco.message); }
     }
+}
+
+// Plano gratuito do Brevo: 300 e-mails/dia. Passando disso, os envios são recusados até o
+// dia seguinte. Avisa no log uma vez por dia quando estiver perto do limite.
+const COTA_DIARIA = Number(process.env.EMAIL_COTA_DIARIA) || 300;
+let ultimoAvisoCota = '';
+async function conferirCota() {
+    try {
+        const hoje = new Date().toDateString();
+        if (ultimoAvisoCota === hoje) return;
+        const enviados = await alertas.contarEnviadosHoje();
+        if (enviados >= COTA_DIARIA * 0.8) {
+            ultimoAvisoCota = hoje;
+            console.warn(`[alertas] ${enviados} alertas enviados hoje (cota configurada: ${COTA_DIARIA}). ` +
+                'Perto do limite diário do Brevo os e-mails passam a ser recusados. Considere ALERTAS_EQUIPE=criticos ou um plano pago.');
+        }
+    } catch (_) { /* aviso é só informativo */ }
 }
 
 // Chamado pelo controller no momento do evento (saída/retorno): grava a fila no banco e
 // dispara o envio na hora, sem segurar a resposta da portaria. Nunca lança erro.
 async function avisarTodos(pedidoId, tipo) {
+    avisosPush().avisarPedido(pedidoId, tipo);
     try {
         await alertas.enfileirar(pedidoId, tipo);
     } catch (erro) {

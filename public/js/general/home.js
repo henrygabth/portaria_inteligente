@@ -144,7 +144,7 @@ async function carregarHistorico() {
                 <td>${escHome(pedido.turma || '-')}</td>
                 <td>${dataHora}</td>
                 <td><span class="status status-${statusClass}">${escHome(rotuloStatus(pedido))}</span></td>
-                <td>${motivo}</td>
+                <td>${escHome(motivo)}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -289,6 +289,7 @@ if (formConta) {
             const data = await resp.json();
 
             if (resp.ok) {
+                if (data.token) { try { localStorage.setItem('token', data.token); } catch (_) { /* sem storage */ } }
                 alert('Dados atualizados com sucesso!');
                 document.getElementById('senhaAtual').value = '';
                 document.getElementById('novaSenha').value = '';
@@ -386,10 +387,10 @@ async function carregarPedidosRecorrentes() {
         lista.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${item.nome_aluno}${item.turma ? ` (${item.turma})` : ''}</td>
-                <td>${DIAS_SEMANA_LABEL[item.dia_semana]}</td>
-                <td>${item.hora_saida?.slice(0, 5) || '-'}</td>
-                <td>${item.hora_retorno ? item.hora_retorno.slice(0, 5) : '-'}</td>
+                <td>${escHome(item.nome_aluno)}${item.turma ? ` (${escHome(item.turma)})` : ''}</td>
+                <td>${escHome(DIAS_SEMANA_LABEL[item.dia_semana] || '-')}</td>
+                <td>${escHome(item.hora_saida?.slice(0, 5) || '-')}</td>
+                <td>${item.hora_retorno ? escHome(item.hora_retorno.slice(0, 5)) : '-'}</td>
                 <td>${item.ativo ? 'Ativo' : 'Pausado'}</td>
                 <td style="white-space: nowrap;">
                     <button type="button" class="btn-toggle-recorrente" data-id="${item.recorrente_id}" data-ativo="${item.ativo ? 0 : 1}">

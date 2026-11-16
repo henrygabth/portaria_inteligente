@@ -1,5 +1,7 @@
 const chat = require('../model/chatModel');
+const equipe = require('../model/chatEquipeModel');
 const tempoReal = require('../utils/tempoReal');
+const avisosPush = require('../utils/avisosPush');
 
 const MAX_TEXTO = 1000;
 const MAX_POR_MINUTO = 15;
@@ -48,11 +50,48 @@ async function gravar(res, responsavelId, remetenteId, de, corpo) {
     const { id, duplicada } = await chat.enviar(responsavelId, remetenteId, de, texto, uuid);
     const mensagem = await chat.buscarMensagem(id);
     // Mensagem repetida (mesmo client_uuid) não é emitida de novo.
-    if (mensagem && !duplicada) emitir(mensagem);
+    if (mensagem && !duplicada) { emitir(mensagem); avisosPush.avisarMensagem(mensagem); }
     return res.status(duplicada ? 200 : 201).json({ mensagem_id: id, duplicada, mensagem });
 }
 
+const PAPEIS_EQUIPE = ['SECRETARIA', 'ADMIN', 'PORTARIA', 'PORTEIRO'];
+
 module.exports = {
+    // ----- chat interno: secretaria <-> portaria -----
+    equipeListar: async (req, res) => {
+        try {
+            const lado = equipe.ladoDoPapel(req.usuario.tipo_usuario);
+            const avancou = await equipe.marcarLido(req.usuario.id_usuario);
+            const [mensagens, vistoAte] = await Promise.all([equipe.listar(), equipe.vistoPeloOutroLado(lado)]);
+            if (avancou) { try { tempoReal.publicarParaPapeis(PAPEIS_EQUIPE, 'equipe:lida', { lado }); } catch (_) { /* tempo real é opcional */ } }
+            res.json({ mensagens, vistoAte, meuLado: lado, meuId: req.usuario.id_usuario });
+        } catch (err) { tratarErro(res, err); }
+    },
+    equipeEnviar: async (req, res) => {
+        try {
+            const lado = equipe.ladoDoPapel(req.usuario.tipo_usuario);
+            const texto = validarTexto(req.body?.texto);
+            if (!texto) return res.status(400).json({ erro: `Escreva uma mensagem de até ${MAX_TEXTO} caracteres.` });
+            if (await equipe.enviadasUltimoMinuto(req.usuario.id_usuario) >= MAX_POR_MINUTO) {
+                return res.status(429).json({ erro: 'Muitas mensagens em pouco tempo. Aguarde um instante.' });
+            }
+            const { id, duplicada } = await equipe.enviar(req.usuario.id_usuario, lado, texto, validarUuid(req.body?.client_uuid));
+            await equipe.marcarLido(req.usuario.id_usuario);
+            const mensagem = await equipe.buscar(id);
+            if (mensagem && !duplicada) {
+                try { tempoReal.publicarParaPapeis(PAPEIS_EQUIPE, 'equipe:mensagem', { mensagem }); }
+                catch (e) { console.error('[chat] Falha ao emitir (equipe):', e.message); }
+            }
+            res.status(duplicada ? 200 : 201).json({ mensagem_id: id, duplicada, mensagem });
+        } catch (err) { tratarErro(res, err); }
+    },
+    equipeNaoLidas: async (req, res) => {
+        try {
+            const lado = equipe.ladoDoPapel(req.usuario.tipo_usuario);
+            res.json({ naoLidas: await equipe.naoLidas(req.usuario.id_usuario, lado) });
+        } catch (err) { tratarErro(res, err); }
+    },
+
     // ----- responsável: sempre a PRÓPRIA conversa (id vem do token, nunca da URL) -----
     minhaConversa: async (req, res) => {
         try {

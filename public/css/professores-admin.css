@@ -1,0 +1,168 @@
+/* ===========================================================
+   Professores e Turmas (secretaria/admin)
+   =========================================================== */
+.pa-cabecalho { text-align: left; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.pa-cabecalho .descricao-tela { max-width: 640px; margin-top: 6px; }
+
+.pa-resumo { display: flex; gap: 10px; }
+.pa-resumo-item {
+    display: flex; flex-direction: column; align-items: flex-start; padding: 10px 16px; border-radius: 12px;
+    background: var(--card-bg); border: 1px solid rgba(15, 23, 42, .08); box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+}
+.pa-resumo-item strong { font-size: 22px; color: var(--primary-blue); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pa-resumo-item span { font-size: 12px; opacity: .7; }
+
+.pa-grade { display: grid; grid-template-columns: minmax(340px, 5fr) 7fr; gap: 20px; align-items: start; }
+.pa-grade > .card { margin-top: 20px; }
+.pa-grade h2 { display: flex; align-items: center; gap: 10px; font-size: 18px; margin: 0 0 4px; }
+.pa-grade h2 i { color: var(--primary-blue); }
+
+/* ---------- formulário em etapas ---------- */
+.pa-form-card { position: sticky; top: 80px; }
+.pa-etapa { border: 0; padding: 0; margin: 18px 0 0; min-width: 0; }
+.pa-etapa legend { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 14.5px; color: var(--dark-blue); margin-bottom: 10px; padding: 0; }
+.pa-num {
+    width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center;
+    background: var(--primary-blue); color: #fff; font-size: 12.5px; font-weight: 800;
+}
+.pa-opcional { font-weight: 500; font-size: 12px; opacity: .6; margin-left: 4px; }
+
+.pa-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.pa-campos .pa-largo { grid-column: 1 / -1; }
+.pa-campos .input-group, .pa-senha .input-group { margin: 0; }
+.pa-campos label, .pa-senha label { font-size: 13px; font-weight: 600; }
+
+.pa-senha { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+
+.pa-btn-sec {
+    width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
+    padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--border-color);
+    background: var(--card-bg); color: var(--text-color); font-size: 13px; font-weight: 600;
+}
+.pa-btn-sec:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+
+.pa-link { width: auto; padding: 0; border: 0; background: none; color: var(--primary-blue); font-size: 12.5px; font-weight: 600; }
+.pa-link:hover { text-decoration: underline; }
+
+.pa-enviar { width: 100%; margin-top: 18px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+.pa-msg { margin: 16px 0 0; padding: 11px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; line-height: 1.45; }
+.pa-msg.ok { background: #dcfce7; color: #14532d; }
+.pa-msg.erro { background: #fee4e2; color: #912018; }
+.pa-msg i { margin-right: 6px; }
+
+/* ---------- seletor de turmas (chips) ---------- */
+.pa-seletor { border: 1px solid rgba(15, 23, 42, .1); border-radius: 12px; padding: 12px; background: rgba(15, 23, 42, .02); }
+.pa-seletor-topo { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.pa-seletor-topo .pa-busca { flex: 1 1 160px; }
+.pa-contador { font-size: 12.5px; font-weight: 600; color: var(--primary-blue); }
+
+.pa-grupo + .pa-grupo { margin-top: 10px; }
+.pa-grupo[hidden] { display: none; }
+.pa-grupo-nome { display: block; font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; opacity: .55; margin-bottom: 6px; }
+.pa-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pa-chip { cursor: pointer; }
+.pa-chip[hidden] { display: none; }
+.pa-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.pa-chip span {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px;
+    border: 1.5px solid var(--border-color); background: var(--card-bg); font-size: 13px; font-weight: 600;
+    color: var(--text-color); transition: background .15s ease, border-color .15s ease, color .15s ease; user-select: none;
+}
+.pa-chip span i { display: none; font-size: 11px; }
+.pa-chip:hover span { border-color: var(--primary-blue); }
+.pa-chip input:checked + span { background: var(--primary-blue); border-color: var(--primary-blue); color: #fff; }
+.pa-chip input:checked + span i { display: inline; }
+.pa-chip input:focus-visible + span { outline: 3px solid #7aa7ff; outline-offset: 2px; }
+
+/* ---------- busca ---------- */
+.pa-busca { position: relative; }
+.pa-busca i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; opacity: .5; pointer-events: none; }
+.pa-busca input {
+    width: 100%; padding: 9px 12px 9px 34px; border-radius: 9px; font-size: 14px;
+    border: 1.5px solid var(--border-color); background: var(--input-bg); color: var(--text-color);
+}
+.pa-busca.pequena input { padding-top: 7px; padding-bottom: 7px; font-size: 13px; }
+.pa-busca input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(0, 82, 204, .14); }
+
+/* ---------- lista de professores ---------- */
+.pa-lista-topo { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; }
+.pa-lista-topo .pa-busca { flex: 0 1 300px; }
+
+.pa-aviso {
+    display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; margin-bottom: 12px; border-radius: 10px;
+    background: #fff7e0; color: #6b4a00; font-size: 13.5px; line-height: 1.6;
+}
+.pa-aviso[hidden] { display: none; }
+.pa-aviso > i { margin-top: 3px; }
+.pa-aviso small { opacity: .8; }
+
+.pa-lista { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.pa-prof {
+    padding: 14px; border-radius: 12px; border: 1px solid rgba(15, 23, 42, .09); background: var(--card-bg);
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+.pa-prof.editando { border-color: var(--primary-blue); box-shadow: 0 6px 20px rgba(0, 82, 204, .12); }
+.pa-prof.salvo { animation: pa-salvo 1.6s ease; }
+@keyframes pa-salvo { 0%, 40% { background: rgba(22, 163, 74, .12); } 100% { background: var(--card-bg); } }
+.pa-prof.inativo { opacity: .65; }
+
+.pa-prof-linha { display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; align-items: center; }
+.pa-avatar {
+    width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center;
+    background: #e8f0ff; color: var(--primary-blue); font-weight: 800; font-size: 14px;
+}
+.pa-prof-info { display: flex; flex-direction: column; min-width: 0; }
+.pa-prof-info strong { color: var(--dark-blue); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pa-prof-info span { font-size: 13px; opacity: .7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pa-status { font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+.pa-status.ativo { background: #dcfce7; color: #146c2e; }
+.pa-status.inativo { background: #f1f5f9; color: #64748b; }
+
+.pa-prof-turmas { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0 54px; }
+.pa-tag {
+    display: inline-block; padding: 3px 9px; border-radius: 6px; background: rgba(0, 82, 204, .08);
+    color: #063e9b; font-size: 12px; font-weight: 600;
+}
+.pa-aviso .pa-tag { background: rgba(107, 74, 0, .1); color: inherit; }
+.pa-sem-turma { font-size: 12.5px; color: #a15c00; font-weight: 600; }
+
+.pa-editor { margin: 14px 0 0 54px; }
+.pa-editor-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.pa-editor-acoes .btn-professor { display: inline-flex; align-items: center; gap: 7px; padding: 10px 14px; font-weight: 600; }
+
+.pa-vazio { padding: 22px; text-align: center; opacity: .7; border-radius: 12px; background: rgba(15, 23, 42, .03); list-style: none; }
+.pa-vazio.erro { color: #b42318; opacity: 1; }
+
+/* ---------- tema escuro ---------- */
+[data-theme="dark"] .pa-resumo-item,
+[data-theme="dark"] .pa-prof { border-color: #22304b; }
+[data-theme="dark"] .pa-seletor { border-color: #22304b; background: rgba(255, 255, 255, .02); }
+[data-theme="dark"] .pa-chip input:checked + span { background: #3b82f6; border-color: #3b82f6; }
+[data-theme="dark"] .pa-avatar { background: rgba(59, 130, 246, .16); color: #93c0ff; }
+[data-theme="dark"] .pa-tag { background: rgba(59, 130, 246, .16); color: #bcd6ff; }
+[data-theme="dark"] .pa-status.ativo { background: rgba(34, 197, 94, .16); color: #86efac; }
+[data-theme="dark"] .pa-status.inativo { background: #1e293b; color: #94a3b8; }
+[data-theme="dark"] .pa-aviso { background: rgba(250, 204, 21, .1); color: #fde68a; }
+[data-theme="dark"] .pa-sem-turma { color: #fbbf24; }
+[data-theme="dark"] .pa-msg.ok { background: rgba(34, 197, 94, .15); color: #bbf7d0; }
+[data-theme="dark"] .pa-msg.erro { background: rgba(239, 68, 68, .15); color: #fecaca; }
+[data-theme="dark"] .pa-vazio { background: rgba(255, 255, 255, .03); }
+
+/* ---------- responsivo ---------- */
+@media (max-width: 1100px) {
+    .pa-grade { grid-template-columns: 1fr; }
+    .pa-form-card { position: static; }
+}
+
+@media (max-width: 640px) {
+    .pa-campos { grid-template-columns: 1fr; }
+    .pa-senha { grid-template-columns: 1fr; }
+    .pa-prof-linha { grid-template-columns: auto 1fr; }
+    .pa-prof-linha .pa-status { grid-column: 2; justify-self: start; }
+    .pa-prof-linha .pa-btn-sec { grid-column: 1 / -1; }
+    .pa-prof-turmas, .pa-editor { margin-left: 0; }
+    .pa-resumo { width: 100%; }
+    .pa-resumo-item { flex: 1; }
+}

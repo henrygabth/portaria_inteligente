@@ -21,6 +21,7 @@ async function cadastrar(aluno_id, nome_aluno, turma_id, solicitante_id, hora_pr
 
     try { tempoReal.publicarParaPapeis(['SECRETARIA', 'ADMIN'], 'pedido', { pedido_id, status: 'PENDENTE' }); }
     catch (err) { console.error('[tempo-real] Falha ao avisar a secretaria:', err.message); }
+    require('../utils/avisosPush').avisarNovoPedido(pedido_id, nome_aluno);
     return pedido_id;
 }
 
@@ -103,6 +104,8 @@ async function atualizarStatus(pedido_id, statusNovo, usuario_id, observacao = n
         await conn.commit();
         // Depois do commit (o dado já está no banco): avisa as telas abertas em tempo real.
         await avisarTelas(pedido_id, statusFinal, tipoAviso);
+        // Decisão da secretaria: notificação no celular do responsável (saída/retorno vão pelo alertasEmail).
+        if (['APROVADA', 'RECUSADA', 'CANCELADA'].includes(statusNovo)) require('../utils/avisosPush').avisarPedido(pedido_id, statusNovo);
         return true;
     } catch (err) { await conn.rollback(); throw err; }
     finally { conn.release(); }

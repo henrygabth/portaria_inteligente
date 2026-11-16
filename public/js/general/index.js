@@ -101,39 +101,20 @@ async function login(event) {
     loadingDiv.style.display = 'flex';
 
     try {
+        let dispositivo = null;
+        try { dispositivo = localStorage.getItem('pi-dispositivo'); } catch (_) { /* sem storage */ }
         const response = await fetch(`${API_URL}/usuarios/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, senha })
+            body: JSON.stringify({ email, senha, dispositivo })
         });
 
         const data = await response.json();
 
-        if (response.ok) {
-            localStorage.setItem('token', data.token);
-            if (data.usuario) {
-                localStorage.setItem('usuario', JSON.stringify(data.usuario));
-            }
-
-            // Primeiro login: a próxima tela mostra a sugestão de trocar a senha.
-            if (data.sugerirTrocaSenha) {
-                localStorage.setItem('sugerirTrocaSenha', '1');
-            } else {
-                localStorage.removeItem('sugerirTrocaSenha');
-            }
-
-            const tipoUsuario = (data.usuario?.tipo_usuario || '').toUpperCase();
-
-            // O ADMIN tem acesso aos três painéis, então em vez de já cair
-            // direto em um deles, ele escolhe qual quer acessar.
-            const destino = tipoUsuario === 'ADMIN'
-                ? 'selecionar-painel.html'
-                : (data.redirecionarPara || (
-                    tipoUsuario === 'SECRETARIA' ? 'secretaria.html' :
-                    tipoUsuario === 'PORTEIRO' || tipoUsuario === 'PORTARIA' ? 'portaria.html' : tipoUsuario === 'PROFESSOR' ? 'professor.html' : 'home.html'
-                ));
-
-            window.location.href = destino;
+        if (response.ok && data.doisFatores) {
+            pedirCodigo(data);
+        } else if (response.ok) {
+            await concluirEntrada(data);
         } else {
             alert('Erro no login: ' + (data.erro || 'Credenciais inválidas'));
         }
@@ -142,6 +123,114 @@ async function login(event) {
     } finally {
         loadingDiv.style.display = 'none';
     }
+}
+
+// Depois do login (com ou sem código): guarda a sessão, pede o aceite da LGPD se faltar e
+// leva para a tela certa.
+async function concluirEntrada(data) {
+    localStorage.setItem('token', data.token);
+    if (data.usuario) localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    if (data.dispositivo) { try { localStorage.setItem('pi-dispositivo', data.dispositivo); } catch (_) { /* sem storage */ } }
+    localStorage.removeItem('sugerirTrocaSenha');
+
+    const tipoUsuario = (data.usuario?.tipo_usuario || '').toUpperCase();
+    // Primeiro acesso: a troca de senha já inclui o aceite do termo e da política.
+    if (data.aceitarTermos && !data.trocarSenha) await pedirAceiteTermos(data.versaoTermos);
+
+    // O ADMIN tem acesso aos três painéis, então em vez de já cair
+    // direto em um deles, ele escolhe qual quer acessar.
+    // Primeiro acesso: troca de senha obrigatória antes de qualquer outra tela.
+    const destino = data.trocarSenha
+        ? `trocar-senha.html?depois=${encodeURIComponent(tipoUsuario === 'ADMIN' ? 'selecionar-painel.html' : data.redirecionarPara || 'home.html')}`
+        : tipoUsuario === 'ADMIN'
+        ? 'selecionar-painel.html'
+        : (data.redirecionarPara || (
+            tipoUsuario === 'SECRETARIA' ? 'secretaria.html' :
+            tipoUsuario === 'PORTEIRO' || tipoUsuario === 'PORTARIA' ? 'portaria.html' : tipoUsuario === 'PROFESSOR' ? 'professor.html' : 'home.html'
+        ));
+
+    window.location.href = destino;
+}
+
+// Caixa de diálogo simples e acessível usada pelo código de acesso e pelo aceite da LGPD.
+function abrirDialogo(html, rotulo) {
+    const fundo = document.createElement('div');
+    fundo.className = 'modal-recurso';
+    fundo.innerHTML = `<div class="modal-recurso-caixa" role="dialog" aria-modal="true" aria-labelledby="${rotulo}">${html}</div>`;
+    document.body.appendChild(fundo);
+    return fundo;
+}
+
+// 2ª etapa (secretaria/administração): código de 6 números enviado por e-mail.
+function pedirCodigo(dados) {
+    const fundo = abrirDialogo(`
+        <button type="button" class="modal-recurso-fechar" aria-label="Cancelar e voltar">&times;</button>
+        <h2 id="codTitulo"><i class="fas fa-shield-halved" aria-hidden="true"></i> Confirme que é você</h2>
+        <p class="tela-intro">Enviamos um código de 6 números para <strong>${String(dados.email || 'o seu e-mail').replace(/</g, '&lt;')}</strong>. Ele vale por ${dados.validadeMin || 10} minutos.</p>
+        <div id="codForm" class="codigo-form">
+            <label for="codCampo">Código de acesso</label>
+            <input id="codCampo" class="codigo-campo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required aria-describedby="codErro">
+            <label class="importar-check"><input type="checkbox" id="codConfiar"> Confiar neste aparelho por 30 dias (não use em computador compartilhado)</label>
+            <p id="codErro" class="erro-texto" role="alert"></p>
+            <button type="button" class="btn-importar codigo-entrar">Entrar</button>
+            <p class="codigo-ajuda">Não chegou? Confira o spam ou feche e entre com a senha de novo para receber outro.</p>
+        </div>`, 'codTitulo');
+    const campo = fundo.querySelector('#codCampo');
+    const erro = fundo.querySelector('#codErro');
+    campo.addEventListener('input', () => { campo.value = campo.value.replace(/\D/g, '').slice(0, 6); if (campo.value.length === 6) enviar(); });
+    campo.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); enviar(); } });
+    fundo.querySelector('.modal-recurso-fechar').addEventListener('click', () => fundo.remove());
+    fundo.querySelector('.codigo-entrar').addEventListener('click', () => enviar());
+    async function enviar() {
+        if (enviar.ocupado) return;
+        if (!/^\d{6}$/.test(campo.value)) { erro.textContent = 'Digite os 6 números.'; campo.focus(); return; }
+        const botao = fundo.querySelector('.codigo-entrar'); botao.disabled = true; erro.textContent = ''; enviar.ocupado = true;
+        try {
+            const r = await fetch(`${API_URL}/usuarios/login/codigo`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ desafio: dados.desafio, codigo: campo.value, confiar: fundo.querySelector('#codConfiar').checked })
+            });
+            const d = await r.json();
+            if (!r.ok) {
+                erro.textContent = d.erro || 'Código incorreto.';
+                campo.value = ''; campo.focus(); botao.disabled = false; enviar.ocupado = false;
+                if (d.expirado) setTimeout(() => fundo.remove(), 2500);
+                return;
+            }
+            fundo.remove();
+            await concluirEntrada(d);
+        } catch (_) { erro.textContent = 'Erro de conexão com o servidor.'; botao.disabled = false; enviar.ocupado = false; }
+    }
+    campo.focus();
+}
+
+// LGPD: quem ainda não aceitou a versão atual do termo/política aceita antes de entrar.
+function pedirAceiteTermos(versao) {
+    loadingDiv.style.display = 'none';
+    return new Promise(resolve => {
+        const fundo = abrirDialogo(`
+            <h2 id="lgpdTitulo"><i class="fas fa-user-shield" aria-hidden="true"></i> Privacidade dos seus dados</h2>
+            <p class="tela-intro">Para usar o sistema, precisamos do seu aceite. Explicamos quais dados guardamos, para quê, por quanto tempo e como você pode baixar ou apagar os seus dados.</p>
+            <p><a href="politica-privacidade.html" target="_blank" rel="noopener">Ler o termo de uso e a política de privacidade <span class="sr-only">(abre em nova aba)</span></a></p>
+            <label class="importar-check"><input type="checkbox" id="lgpdAceito"> Li e aceito o termo de uso e a política de privacidade.</label>
+            <p id="lgpdErro" class="erro-texto" role="alert"></p>
+            <div class="importar-botoes"><button type="button" class="btn-filtro secundario" id="lgpdSair">Sair</button><button type="button" class="btn-importar" id="lgpdOk">Aceitar e continuar</button></div>`, 'lgpdTitulo');
+        fundo.querySelector('#lgpdSair').addEventListener('click', () => { localStorage.removeItem('token'); localStorage.removeItem('usuario'); location.reload(); });
+        fundo.querySelector('#lgpdOk').addEventListener('click', async () => {
+            const erro = fundo.querySelector('#lgpdErro');
+            if (!fundo.querySelector('#lgpdAceito').checked) { erro.textContent = 'Marque a caixa para continuar.'; return; }
+            try {
+                const r = await fetch(`${API_URL}/usuarios/aceitar-termos`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    body: JSON.stringify({ aceito: true, versao })
+                });
+                const d = await r.json();
+                if (!r.ok) { erro.textContent = d.erro || 'Não foi possível registrar.'; return; }
+                fundo.remove(); resolve();
+            } catch (_) { erro.textContent = 'Erro de conexão com o servidor.'; }
+        });
+        fundo.querySelector('#lgpdAceito').focus();
+    });
 }
 
 async function register(event) {

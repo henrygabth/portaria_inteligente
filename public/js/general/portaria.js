@@ -1,7 +1,7 @@
 const API_URL = '/api';
 
 function mostrarTela(idTela) {
-    const telas = ['tela-inicio', 'tela-saidas', 'tela-retorno', 'tela-historico'];
+    const telas = ['tela-inicio', 'tela-saidas', 'tela-retorno', 'tela-historico', 'tela-equipe'];
     telas.forEach(t => {
         const el = document.getElementById(t);
         if (el) el.style.display = 'none';
@@ -11,6 +11,7 @@ function mostrarTela(idTela) {
     if (telaAtiva) telaAtiva.style.display = 'block';
 
     if (typeof fecharMenuNoCelular === 'function') fecharMenuNoCelular();
+    if (window.PIEquipe) window.PIEquipe.aoMudarTela(idTela);
 
     if (idTela === 'tela-saidas') {
         carregarSaidas();
@@ -104,7 +105,9 @@ async function carregarSaidas() {
         if (dados.length === 0) {
             mensagemVazia(tbody, 'Nenhuma saída aprovada aguardando registro.');
         } else {
+            pedidosAprovados.clear();
             dados.forEach(pedido => {
+                pedidosAprovados.set(Number(pedido.pedidos_saida_id), pedido);
                 const tr = document.createElement('tr');
                 const autorizadoPor = pedido.secretario || pedido.aprovador;
                 tr.innerHTML = `
@@ -137,12 +140,71 @@ async function carregarSaidas() {
     }
 }
 
+// ------------------------------------------------------------------
+// Conferência do rosto antes de liberar: foto 3x4 grande + dados do pedido.
+// O porteiro só registra a saída depois de confirmar que é o aluno certo.
+// ------------------------------------------------------------------
+const pedidosAprovados = new Map();
+
+function confirmarIdentidade(pedido, paraCasa) {
+    return new Promise(resolve => {
+        const anterior = document.activeElement;
+        const fundo = document.createElement('div');
+        fundo.className = 'conferir-fundo';
+        fundo.innerHTML = `
+            <div class="conferir-caixa" role="dialog" aria-modal="true" aria-labelledby="conferirTitulo" aria-describedby="conferirAjuda">
+                <h2 id="conferirTitulo">Confira o aluno antes de liberar</h2>
+                <p id="conferirAjuda" class="conferir-ajuda">Compare o rosto com a foto cadastrada pela secretaria.</p>
+                <div class="conferir-corpo">
+                    <div class="conferir-foto">${window.PIFoto ? PIFoto.html(pedido.aluno_id, { tamanho: 'g', nome: pedido.nome_aluno }) : ''}
+                        <p class="conferir-sem-foto" hidden><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Aluno sem foto cadastrada: confira um documento com foto.</p></div>
+                    <dl class="conferir-dados">
+                        <dt>Aluno</dt><dd><strong>${esc(pedido.nome_aluno || 'Aluno')}</strong></dd>
+                        <dt>Turma</dt><dd>${esc(pedido.turma || '-')}</dd>
+                        <dt>Responsável</dt><dd>${esc(pedido.responsavel || '-')}</dd>
+                        <dt>Saída prevista</dt><dd>${formatarHorario(pedido.hora_prevista_saida)}</dd>
+                        <dt>Retorno</dt><dd>${paraCasa ? 'Não volta hoje (vai para casa)' : formatarHorario(pedido.hora_prevista_retorno)}</dd>
+                        <dt>Autorizado por</dt><dd>${esc(pedido.secretario || pedido.aprovador || 'Secretaria')}</dd>
+                    </dl>
+                </div>
+                <div class="conferir-botoes">
+                    <button type="button" class="conferir-nao"><i class="fas fa-user-xmark" aria-hidden="true"></i> Não é este aluno</button>
+                    <button type="button" class="conferir-sim"><i class="fas fa-user-check" aria-hidden="true"></i> É o aluno: ${paraCasa ? 'liberar para casa' : 'registrar saída'}</button>
+                </div>
+                <button type="button" class="conferir-fechar" aria-label="Fechar sem liberar">&times;</button>
+            </div>`;
+        document.body.appendChild(fundo);
+        const quadroFoto = fundo.querySelector('[data-foto-aluno]');
+        // A foto chega depois; se o aluno não tiver foto, mostra o aviso de conferir documento.
+        const checarFoto = () => { if (!quadroFoto || quadroFoto.classList.contains('sem-foto')) fundo.querySelector('.conferir-sem-foto').hidden = false; };
+        setTimeout(checarFoto, 1200);
+        if (!quadroFoto) checarFoto();
+        const fechar = valor => { fundo.remove(); document.removeEventListener('keydown', tecla); if (anterior && anterior.focus) anterior.focus(); resolve(valor); };
+        const tecla = e => { if (e.key === 'Escape') fechar('fechou'); };
+        document.addEventListener('keydown', tecla);
+        fundo.addEventListener('click', e => {
+            if (e.target === fundo || e.target.closest('.conferir-fechar')) fechar('fechou');
+            else if (e.target.closest('.conferir-sim')) fechar('sim');
+            else if (e.target.closest('.conferir-nao')) fechar('nao');
+        });
+        fundo.querySelector('.conferir-sim').focus();
+    });
+}
+
 async function liberarSaida(id, paraCasa = false) {
     const token = localStorage.getItem('token');
-    const pergunta = paraCasa
-        ? 'Confirmar a liberação deste aluno para ir para casa? Ele não volta hoje e o pedido será concluído. A autorização já foi dada pela secretaria.'
-        : 'Confirmar o registro da saída deste aluno? A autorização já foi dada pela secretaria.';
-    if (!confirm(pergunta)) return;
+    const pedido = pedidosAprovados.get(Number(id)) || { pedidos_saida_id: id };
+    const resposta = await confirmarIdentidade(pedido, paraCasa);
+    if (resposta === 'nao') {
+        // Fica registrado na auditoria e a secretaria é avisada pelo chat interno.
+        fetch(`${API_URL}/auditoria/identificacao`, {
+            method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pedido_id: Number(id) })
+        }).catch(() => {});
+        alert('Saída NÃO registrada. A secretaria foi avisada para conferir a situação.');
+        return;
+    }
+    if (resposta !== 'sim') return;
 
     try {
         const resp = await fetch(`${API_URL}/pedidos/liberar/${id}`, {

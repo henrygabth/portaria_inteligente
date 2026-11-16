@@ -1,0 +1,22 @@
+{
+  "name": "Portaria Inteligente",
+  "short_name": "Portaria",
+  "description": "Controle de saída e retorno de alunos: pedido da família, aprovação da secretaria e liberação na portaria.",
+  "lang": "pt-BR",
+  "start_url": "/?origem=app",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#002B73",
+  "theme_color": "#0A192F",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/img/icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Nova solicitação de saída", "short_name": "Nova saída", "url": "/home.html?tela=tela-criar", "icons": [{ "src": "/img/icones/icone-192.png", "sizes": "192x192" }] },
+    { "name": "Mensagens", "url": "/home.html?tela=tela-mensagens", "icons": [{ "src": "/img/icones/icone-192.png", "sizes": "192x192" }] }
+  ]
+}

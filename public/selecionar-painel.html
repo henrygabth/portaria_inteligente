@@ -4,13 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Selecionar Painel</title>
+    <meta name="theme-color" content="#0A192F">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icones/icone-192.png">
+    <link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portaria">
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <script src="/js/general/pwa.js" defer></script>
+    <title>Painel do Administrador - Portaria Inteligente</title>
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="./css/global.css?v=4" rel="stylesheet">
     <link href="./css/home.css?v=8" rel="stylesheet">
-    <link href="./css/selecionar-painel.css?v=4" rel="stylesheet">
-    <link href="./css/tema-escuro.css?v=1" rel="stylesheet">
+    <link href="./css/selecionar-painel.css?v=5" rel="stylesheet">
+    <link href="./css/tema-escuro.css?v=3" rel="stylesheet">
     <script src="./js/general/particulas.js?v=1"></script>
     <script src="./js/general/menu-lateral.js?v=1"></script>
 </head>
@@ -22,7 +31,7 @@
         <div class="logo">
             <a href="#"><img src="./img/logo_pi.png" alt="Portaria Inteligente"> Portaria Inteligente</a>
         </div>
-        <button id="themeToggle"
+        <button id="themeToggle" aria-label="Alternar tema"
             style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; margin-right: 20px;">
             <i class="fas fa-moon"></i>
         </button>
@@ -30,37 +39,97 @@
 
     <main class="main-content selecao-main">
         <div class="selecao-wrapper">
-            <h1>Qual painel você deseja acessar?</h1>
-            <p id="boasVindas" class="selecao-subtitulo">Escolha uma das opções abaixo para continuar.</p>
+
+            <!-- Cabeçalho: saudação, data e usuário -->
+            <header class="adm-hero">
+                <div class="adm-hero-texto">
+                    <span class="adm-eyebrow"><i class="fas fa-shield-halved"></i> Administrador</span>
+                    <h1 id="saudacao">Olá!</h1>
+                    <p id="dataHoje" class="adm-data"></p>
+                </div>
+                <div class="adm-usuario">
+                    <span class="adm-avatar" id="avatarIniciais" aria-hidden="true">PI</span>
+                    <div class="adm-usuario-info">
+                        <strong id="nomeUsuario">Administrador</strong>
+                        <button type="button" class="adm-sair" onclick="logout()"><i class="fas fa-arrow-right-from-bracket"></i> Sair</button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Situação da escola agora (atualiza sozinho) -->
+            <section class="adm-status" aria-label="Situação da escola agora">
+                <a class="adm-stat" href="secretaria.html?tela=tela-solicitacoes" id="statPendentes">
+                    <span class="adm-stat-icone amarelo"><i class="fas fa-hourglass-half"></i></span>
+                    <span class="adm-stat-valor" data-valor>–</span>
+                    <span class="adm-stat-rotulo">Pedidos aguardando a secretaria</span>
+                </a>
+                <a class="adm-stat" href="portaria.html?tela=tela-retorno" id="statFora">
+                    <span class="adm-stat-icone azul"><i class="fas fa-person-walking-arrow-right"></i></span>
+                    <span class="adm-stat-valor" data-valor>–</span>
+                    <span class="adm-stat-rotulo">Alunos fora da escola</span>
+                </a>
+                <a class="adm-stat" href="portaria.html?tela=tela-retorno" id="statAtrasados">
+                    <span class="adm-stat-icone vermelho"><i class="fas fa-triangle-exclamation"></i></span>
+                    <span class="adm-stat-valor" data-valor>–</span>
+                    <span class="adm-stat-rotulo">Atrasados no retorno</span>
+                </a>
+                <a class="adm-stat" href="portaria.html?tela=tela-historico" id="statSaidasHoje">
+                    <span class="adm-stat-icone verde"><i class="fas fa-door-open"></i></span>
+                    <span class="adm-stat-valor" data-valor>–</span>
+                    <span class="adm-stat-rotulo">Saídas registradas hoje</span>
+                </a>
+            </section>
+
+            <h2 class="adm-secao-titulo">Para onde você quer ir?</h2>
 
             <div class="selecao-grid">
-                <a href="home.html" class="selecao-card">
-                    <i class="fas fa-user-friends"></i>
-                    <h2>Responsável</h2>
-                    <p>Solicitações de saída antecipada e acompanhamento dos alunos.</p>
+                <a href="secretaria.html" class="selecao-card destaque" data-painel="secretaria">
+                    <span class="selecao-icone"><i class="fas fa-building-columns"></i></span>
+                    <span class="selecao-corpo">
+                        <span class="selecao-titulo">Secretaria <kbd>1</kbd></span>
+                        <span class="selecao-desc">Aprovar ou recusar pedidos, vincular responsáveis, gerenciar alunos e perfis.</span>
+                        <span class="selecao-tags"><span>Solicitações</span><span>Alunos</span><span>Relatórios</span></span>
+                    </span>
+                    <span class="selecao-ir">Abrir <i class="fas fa-arrow-right"></i></span>
                 </a>
 
-                <a href="secretaria.html" class="selecao-card">
-                    <i class="fas fa-building-columns"></i>
-                    <h2>Secretaria</h2>
-                    <p>Aprovação de pedidos, vínculo de responsáveis e gestão de alunos.</p>
+                <a href="portaria.html" class="selecao-card" data-painel="portaria">
+                    <span class="selecao-icone"><i class="fas fa-door-open"></i></span>
+                    <span class="selecao-corpo">
+                        <span class="selecao-titulo">Portaria <kbd>2</kbd></span>
+                        <span class="selecao-desc">Registrar a saída autorizada e o retorno dos alunos no portão.</span>
+                        <span class="selecao-tags"><span>Saídas</span><span>Retornos</span><span>Histórico</span></span>
+                    </span>
+                    <span class="selecao-ir">Abrir <i class="fas fa-arrow-right"></i></span>
                 </a>
 
-                <a href="portaria.html" class="selecao-card">
-                    <i class="fas fa-door-open"></i>
-                    <h2>Portaria</h2>
-                    <p>Liberação de saída e registro de retorno dos alunos.</p>
+                <a href="professores-admin.html" class="selecao-card" data-painel="professores">
+                    <span class="selecao-icone"><i class="fas fa-chalkboard-user"></i></span>
+                    <span class="selecao-corpo">
+                        <span class="selecao-titulo">Professores e Turmas <kbd>3</kbd></span>
+                        <span class="selecao-desc">Cadastrar professores e definir quais turmas cada um acompanha.</span>
+                        <span class="selecao-tags"><span>Cadastro</span><span>Vínculos</span></span>
+                    </span>
+                    <span class="selecao-ir">Abrir <i class="fas fa-arrow-right"></i></span>
+                </a>
+
+                <a href="home.html" class="selecao-card" data-painel="responsavel">
+                    <span class="selecao-icone"><i class="fas fa-user-friends"></i></span>
+                    <span class="selecao-corpo">
+                        <span class="selecao-titulo">Responsável <kbd>4</kbd></span>
+                        <span class="selecao-desc">Ver o sistema como os pais: pedir saída e acompanhar o histórico.</span>
+                        <span class="selecao-tags"><span>Pedidos</span><span>Horários fixos</span></span>
+                    </span>
+                    <span class="selecao-ir">Abrir <i class="fas fa-arrow-right"></i></span>
                 </a>
             </div>
 
-            <button type="button" class="selecao-sair" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i> Sair
-            </button>
+            <p class="adm-dica"><i class="fas fa-keyboard"></i> Dica: use as teclas <kbd>1</kbd> a <kbd>4</kbd> para abrir um painel.</p>
         </div>
     </main>
 
-    <script src="./js/general/sessao.js?v=1"></script>
-    <script src="./js/general/selecionar-painel.js?v=2"></script>
+    <script src="./js/general/sessao.js?v=261114"></script>
+    <script src="./js/general/selecionar-painel.js?v=3"></script>
 </body>
 
 </html>

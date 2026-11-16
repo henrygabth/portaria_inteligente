@@ -5,11 +5,22 @@
     <title>Registro - Controle de Saídas</title>
     <link rel="shortcut icon" href="./img/logo_pi.png" type="image/x-icon">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0A192F">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="/img/icones/icone-192.png">
+    <link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Portaria">
+    <script src="/js/general/acessibilidade.js"></script>
+    <link rel="stylesheet" href="/css/acessibilidade.css?v=2">
+    <link rel="stylesheet" href="/css/recursos.css?v=2">
+    <script src="/js/general/pwa.js" defer></script>
     <link rel="stylesheet" type="text/css" media="screen" href="./css/style.css?v=5">
     <script src="./js/general/index.js?v=2" defer></script>
     <script src="./js/general/particulas.js?v=1"></script>
 </head>
 <body class="centralize" data-fundo="gradiente">
+    <h1 class="sr-only">Cadastro no Portaria Inteligente</h1>
     <form id="registerForm" onsubmit="register(event)">
         <div class="form-field">
             <label for="email">Email</label>

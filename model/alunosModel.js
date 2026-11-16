@@ -56,6 +56,16 @@ const alunos = {
         return resultado.affectedRows > 0;
     },
 
+    // Para a importação: matrículas e "nome|turma" já cadastrados (evita duplicar alunos).
+    chavesExistentes: async () => {
+        const { semAcento } = require('../utils/importarAlunos');
+        const [rows] = await banco.query(`SELECT a.matricula, a.nome, t.sala_turma FROM alunos a LEFT JOIN turmas t ON t.id_turma = a.turma_id`);
+        return {
+            matriculasExistentes: new Set(rows.map(r => String(r.matricula || '').toLowerCase())),
+            nomesExistentes: new Set(rows.map(r => `${semAcento(r.nome)}|${semAcento(r.sala_turma)}`))
+        };
+    },
+
     apagar: async (id) => {
         const sql = "DELETE FROM alunos WHERE aluno_id = ?";
         const [resultado] = await banco.query(sql, [id]);

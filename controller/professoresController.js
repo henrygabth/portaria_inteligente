@@ -2,6 +2,7 @@ const professores = require('../model/professoresModel');
 const usuarios = require('../model/usuariosModel');
 const bcrypt = require('bcrypt');
 const db = require('../config/banco');
+const { validarSenha } = require('../utils/seguranca');
 
 function tratarErro(res, err) {
     if (err.status) return res.status(err.status).json({ erro: err.message });
@@ -59,6 +60,8 @@ module.exports = {
             String(telefone || '').length > 20) {
             return res.status(400).json({ erro: 'Informe nome, CPF de 11 dígitos, e-mail, senha de 8 a 72 caracteres e turmas válidas.' });
         }
+        const problemaSenha = validarSenha(senha);
+        if (problemaSenha) return res.status(400).json({ erro: problemaSenha });
         const conn = await db.getConnection();
         try {
             const hash = await bcrypt.hash(senha, 10);

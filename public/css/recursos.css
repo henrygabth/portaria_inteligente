@@ -1,0 +1,185 @@
+/* ===== Recursos novos: conferência por foto, importação, auditoria, saúde do sistema,
+   código de acesso, privacidade (LGPD) e avisos no celular. Mesma identidade visual do sistema. ===== */
+
+[hidden] { display: none !important; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.tela-intro { color: #5B6676; line-height: 1.5; margin: 0 0 14px; }
+.erro-texto { color: #B42318; font-weight: 600; }
+.ok-texto { color: #1A7F37; }
+
+/* ---------- botões ---------- */
+.btn-importar, .btn-filtro, .btn-perigo {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: auto; min-height: 44px; margin: 0;
+    padding: 0 18px; border-radius: 6px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; border: 1px solid transparent;
+}
+.btn-importar { background: var(--primary-blue, #0052cc); color: #fff; }
+.btn-importar:hover { background: #0040A8; }
+.btn-filtro { background: var(--primary-blue, #0052cc); color: #fff; }
+.btn-filtro.secundario { background: #fff; color: #0A192F; border-color: #C3CCD9; }
+.btn-filtro.secundario:hover { background: #F0F4FA; }
+.btn-perigo { background: #B42318; color: #fff; }
+.btn-perigo:hover { background: #8F1C13; }
+.btn-importar:disabled, .btn-filtro:disabled, .btn-perigo:disabled { opacity: .55; cursor: not-allowed; }
+.link-botao { width: auto; margin: 0; padding: 0; background: none; border: 0; color: var(--primary-blue, #0052cc); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+/* ---------- caixa de diálogo genérica ---------- */
+.modal-recurso { position: fixed; inset: 0; z-index: 5000; background: rgba(6, 16, 43, .6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal-recurso-caixa { position: relative; width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #fff; color: #142033;
+    border-radius: 8px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.35); text-align: left; }
+.modal-recurso-caixa h2 { margin: 0 44px 10px 0; font-size: 20px; color: #0A192F; display: flex; align-items: center; gap: 10px; }
+.modal-recurso-caixa h2 i { color: var(--primary-blue, #0052cc); }
+.modal-recurso-fechar { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: #142033; font-size: 28px; cursor: pointer; }
+.modal-recurso-fechar:hover { background: #EEF1F5; }
+.importar-botoes { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.importar-check { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; font-size: 14.5px; line-height: 1.4; cursor: pointer; }
+.importar-check input { width: 20px; height: 20px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--primary-blue, #0052cc); }
+
+/* ---------- portaria: conferência do rosto ---------- */
+.conferir-fundo { position: fixed; inset: 0; z-index: 5000; background: rgba(6, 16, 43, .65); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.conferir-caixa { position: relative; width: min(640px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #fff; color: #142033; border-radius: 8px; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.conferir-caixa h2 { margin: 0 44px 4px 0; font-size: 21px; color: #0A192F; }
+.conferir-ajuda { margin: 0 0 16px; color: #5B6676; }
+.conferir-corpo { display: grid; grid-template-columns: 190px 1fr; gap: 20px; align-items: start; }
+.conferir-foto .foto-aluno { width: 180px !important; font-size: 56px !important; border-radius: 10px; }
+.conferir-sem-foto { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: #FFF4E5; color: #8A4B00; font-size: 13.5px; font-weight: 600; }
+.conferir-dados { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 15px; }
+.conferir-dados dt { color: #5B6676; }
+.conferir-dados dd { margin: 0; }
+.conferir-dados dd strong { font-size: 18px; color: #0A192F; }
+.conferir-botoes { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; margin-top: 22px; }
+.conferir-botoes button { display: inline-flex; align-items: center; gap: 8px; width: auto; min-height: 48px; margin: 0; padding: 0 18px; border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.conferir-sim { background: #28a745; border: 1px solid #28a745; color: #fff; }
+.conferir-sim:hover { background: #218838; }
+.conferir-nao { background: #fff; border: 2px solid #B42318; color: #B42318; }
+.conferir-nao:hover { background: #FDECEA; }
+.conferir-fechar { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; font-size: 28px; color: #142033; cursor: pointer; }
+
+/* ---------- importar alunos ---------- */
+.importar-topo { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; margin-bottom: 15px; }
+.importar-topo p { margin: 0; }
+.importar-topo .btn-importar { flex: 0 0 auto; }
+.importar-caixa { width: min(820px, 100%); }
+.importar-passos { margin: 0 0 14px; padding-left: 20px; line-height: 1.6; color: #36404F; }
+.importar-arquivo { display: inline-flex; position: relative; }
+.importar-arquivo span { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border: 2px dashed #8DA2C0; border-radius: 8px; color: #0A192F; font-weight: 700; cursor: pointer; }
+.importar-arquivo input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.importar-arquivo input:focus-visible + span, .importar-arquivo:focus-within span { outline: 3px solid #2F80ED; outline-offset: 2px; }
+.importar-status { min-height: 22px; margin: 8px 0; }
+.importar-previa { max-height: 340px; overflow: auto; border: 1px solid #E3E8EF; border-radius: 8px; }
+.importar-previa td small { display: block; color: #5B6676; font-size: 12.5px; }
+.imp-tag { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12.5px; font-weight: 700; }
+.imp-novo { background: #DCFCE7; color: #14532D; }
+.imp-existe { background: #E8EEF7; color: #1F3A5F; }
+.imp-erro { background: #FDECEA; color: #8F1C13; }
+
+/* ---------- auditoria ---------- */
+.auditoria-filtros { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 12px; align-items: end; }
+.aud-campo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.aud-campo .filter-select { width: 100%; box-sizing: border-box; min-height: 42px; margin: 0; }
+.aud-acoes { display: flex; gap: 10px; flex-wrap: wrap; grid-column: 1 / -1; }
+.auditoria-filtros label { font-weight: 600; color: var(--dark-blue, #0A192F); }
+.auditoria-total { margin: 12px 0 6px; color: #5B6676; font-size: 14px; }
+.aud-papel, .aud-ip { display: block; color: #5B6676; font-size: 12px; }
+.aud-acao { font-weight: 700; }
+.aud-identificacao_nao_confere, .aud-login_2fa_falhou { background: #FFF4E5; }
+.auditoria-paginas { display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 14px; }
+
+/* ---------- saúde do sistema ---------- */
+.saude-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.saude-resumo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; padding: 10px 16px; border-radius: 8px; background: #EEF1F5; }
+.saude-resumo.saude-ok { background: #DCFCE7; color: #14532D; }
+.saude-resumo.saude-atencao { background: #FFF4E5; color: #7A4100; }
+.saude-resumo.saude-erro { background: #FDECEA; color: #8F1C13; }
+.saude-lista { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.saude-item { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border-radius: 8px; border: 1px solid #E3E8EF; border-left-width: 5px; }
+.saude-item > i { font-size: 20px; margin-top: 2px; }
+.saude-item strong { display: block; color: #0A192F; }
+.saude-item span { color: #36404F; font-size: 14px; }
+.saude-item.saude-ok { border-left-color: #1A7F37; } .saude-item.saude-ok > i { color: #1A7F37; }
+.saude-item.saude-atencao { border-left-color: #B26A00; } .saude-item.saude-atencao > i { color: #B26A00; }
+.saude-item.saude-erro { border-left-color: #B42318; } .saude-item.saude-erro > i { color: #B42318; }
+.saude-botoes { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.saude-so-admin { color: #5B6676; }
+.saude-servidor { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 0; }
+.saude-servidor div { padding: 12px; border-radius: 8px; background: var(--table-header, #f8f9fa); }
+.saude-servidor dt { font-size: 12.5px; color: #5B6676; }
+.saude-servidor dd { margin: 4px 0 0; font-weight: 700; font-size: 16px; }
+
+/* ---------- minha conta: avisos e privacidade ---------- */
+.recurso-card h2 { display: flex; align-items: center; gap: 10px; }
+.recurso-card h2 i { color: var(--primary-blue, #0052cc); }
+.recurso-botoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.push-estado { padding: 10px 14px; border-radius: 8px; background: #EEF1F5; margin: 0; }
+.push-estado.push-ativo { background: #DCFCE7; color: #14532D; }
+.push-estado.push-negado, .push-estado.push-indisponivel { background: #FFF4E5; color: #7A4100; }
+
+/* ---------- login: código de acesso e privacidade ---------- */
+.codigo-form label[for="codCampo"] { display: block; font-weight: 700; margin-bottom: 6px; }
+.codigo-campo { width: 100%; box-sizing: border-box; height: 58px; font-size: 30px !important; letter-spacing: 12px; text-align: center; border: 2px solid #C3CCD9; border-radius: 6px; }
+.codigo-campo:focus { border-color: var(--primary-blue, #0052cc); }
+.codigo-entrar { width: 100%; min-height: 48px; }
+.codigo-ajuda { font-size: 13px; color: #5B6676; margin: 10px 0 0; }
+.link-privacidade { margin: 14px 0 0; text-align: center; font-size: 13px; }
+.link-privacidade a { color: inherit; opacity: .85; }
+.ts-termos { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0 4px; font-size: 14px; line-height: 1.4; text-align: left; cursor: pointer; }
+.ts-termos input { width: 20px; height: 20px; margin: 1px 0 0; flex: 0 0 auto; accent-color: #0052cc; }
+
+/* ---------- convite para ativar avisos (responsável) ---------- */
+.pi-instalar.pi-push-convite { top: 76px; bottom: auto; }
+.pi-push-icone { width: 40px; height: 40px; border-radius: 10px; background: #2F80ED; display: grid; place-items: center; flex: 0 0 auto; color: #fff; font-size: 18px; }
+
+/* ---------- política de privacidade ---------- */
+.politica { position: relative; z-index: 1; max-width: 860px; margin: 32px auto; padding: 32px; background: #fff; color: #142033; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,.25); line-height: 1.6; text-align: left; }
+.politica-topo { display: flex; gap: 18px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #E3E8EF; }
+.politica-topo img { width: 96px; height: auto; border-radius: 10px; background: #002B73; }
+.politica h1 { margin: 0; font-size: 26px; color: #0A192F; }
+.politica-topo p { margin: 4px 0 0; color: #5B6676; }
+.politica h2 { font-size: 19px; color: #0A192F; margin: 28px 0 8px; }
+.politica-indice { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 16px 0; font-size: 14px; }
+.politica-indice a, .politica a { color: #0052cc; }
+.politica-resumo { margin-top: 18px; padding: 4px 18px 8px; background: #F0F5FF; border-radius: 10px; border-left: 4px solid #0052cc; }
+.politica-tabela { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.politica-tabela th, .politica-tabela td { border: 1px solid #E3E8EF; padding: 8px 10px; vertical-align: top; text-align: left; }
+.politica-tabela thead th { background: #F4F7FB; }
+.politica-voltar { text-align: center; margin-top: 28px; }
+.politica-voltar .enter-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; padding: 0 30px; min-height: 46px; width: auto; color: #fff; }
+
+/* ---------- celular ---------- */
+@media (max-width: 640px) {
+    .conferir-corpo { grid-template-columns: 1fr; justify-items: center; }
+    .conferir-dados { width: 100%; }
+    .conferir-botoes button { flex: 1 1 100%; justify-content: center; }
+    .importar-topo { flex-direction: column; }
+    .importar-topo .btn-importar { width: 100%; }
+    .politica { margin: 0; border-radius: 0; padding: 22px 18px; }
+    .politica-topo { flex-direction: column; align-items: flex-start; }
+    .modal-recurso { align-items: flex-end; padding: 0; }
+    .modal-recurso-caixa, .conferir-caixa { border-radius: 8px 8px 0 0; max-height: 92vh; }
+    .conferir-fundo { align-items: flex-end; padding: 0; }
+    .pi-instalar.pi-push-convite { top: 68px; }
+}
+
+/* ---------- tema escuro ---------- */
+[data-theme="dark"] .modal-recurso-caixa, [data-theme="dark"] .conferir-caixa { background: #141d2f; color: #dbe4f3; }
+[data-theme="dark"] .modal-recurso-caixa h2, [data-theme="dark"] .conferir-caixa h2, [data-theme="dark"] .conferir-dados dd strong,
+[data-theme="dark"] .saude-item strong { color: #fff; }
+[data-theme="dark"] .modal-recurso-fechar, [data-theme="dark"] .conferir-fechar { color: #dbe4f3; }
+[data-theme="dark"] .modal-recurso-fechar:hover { background: #22304b; }
+[data-theme="dark"] .tela-intro, [data-theme="dark"] .conferir-ajuda, [data-theme="dark"] .conferir-dados dt,
+[data-theme="dark"] .aud-papel, [data-theme="dark"] .aud-ip, [data-theme="dark"] .auditoria-total, [data-theme="dark"] .importar-passos,
+[data-theme="dark"] .saude-item span, [data-theme="dark"] .saude-servidor dt, [data-theme="dark"] .codigo-ajuda { color: #AFC0DA; }
+[data-theme="dark"] .btn-filtro.secundario { background: #1b2740; color: #dbe4f3; border-color: #2c3d5e; }
+[data-theme="dark"] .btn-filtro.secundario:hover { background: #22304b; }
+[data-theme="dark"] .saude-item { border-color: #22304b; }
+[data-theme="dark"] .saude-item.saude-ok { border-left-color: #22c55e; }
+[data-theme="dark"] .saude-item.saude-atencao { border-left-color: #f59e0b; }
+[data-theme="dark"] .saude-item.saude-erro { border-left-color: #ff8a80; }
+[data-theme="dark"] .saude-item.saude-ok > i { color: #4ade80; }
+[data-theme="dark"] .saude-item.saude-atencao > i { color: #fbbf24; }
+[data-theme="dark"] .saude-item.saude-erro > i { color: #ff8a80; }
+[data-theme="dark"] .saude-servidor div, [data-theme="dark"] .push-estado { background: #1b2740; }
+[data-theme="dark"] .importar-arquivo span { color: #dbe4f3; border-color: #4B6287; }
+[data-theme="dark"] .importar-previa { border-color: #22304b; }
+[data-theme="dark"] .auditoria-filtros label { color: #dbe4f3; }
+[data-theme="dark"] .erro-texto { color: #FF8A80; }
+[data-theme="dark"] .link-botao { color: #8AB4FF; }

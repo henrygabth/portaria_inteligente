@@ -1,6 +1,9 @@
 const express = require('express');
 const rotas = express.Router();
 
+// Todo :id da URL precisa ser um número inteiro positivo (barra lixo/injeção antes do controller).
+rotas.param('id', (req, res, next, valor) => (/^[1-9]\d{0,9}$/.test(valor) ? next() : res.status(400).json({ erro: 'Identificador inválido.' })));
+
 // Importar o controller
 const alunosController = require('../controller/alunosController');
 const { auth, exigirPapel } = require('../middlewares/authenticar');
@@ -15,6 +18,8 @@ const receberFoto = (req, res, next) => express.raw({ type: 'image/jpeg', limit:
     if (!err) return next();
     return res.status(err.status === 413 ? 413 : 400).json({ erro: err.status === 413 ? 'A foto é grande demais (máximo 400 KB).' : 'Não foi possível ler a foto enviada.' });
 });
+// Importar alunos por planilha (até 2000 linhas por vez).
+rotas.post('/importar', auth, exigirPapel('SECRETARIA', 'ADMIN'), express.json({ limit: '1mb' }), alunosController.importar);
 rotas.put('/:id/foto', auth, exigirPapel('SECRETARIA', 'ADMIN'), receberFoto, alunosController.enviarFoto);
 rotas.get('/:id/foto', auth, alunosController.obterFoto);
 rotas.get('/buscarTodos', auth, exigirPapel('SECRETARIA', 'ADMIN'), alunosController.listarTodos);

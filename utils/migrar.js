@@ -62,6 +62,21 @@ async function garantirIndiceUnico(tabela, nome, colunas) {
     }
 }
 
+async function garantirIndice(tabela, nome, colunas) {
+    if (!(await tabelaExiste(tabela))) return;
+    const [rows] = await db.query(
+        `SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ? LIMIT 1`,
+        [tabela, nome]
+    );
+    if (rows.length) return;
+    try {
+        await db.query(`ALTER TABLE \`${tabela}\` ADD KEY \`${nome}\` ${colunas}`);
+        console.log(`[migrar] Índice criado: ${tabela}.${nome}`);
+    } catch (err) {
+        console.error(`[migrar] Não foi possível criar o índice ${tabela}.${nome}: ${err.message}`);
+    }
+}
+
 async function criarTabelaSePreciso(nome, sqlComFk, sqlSemFk) {
     if (await tabelaExiste(nome)) return;
     try {
@@ -389,10 +404,171 @@ async function migrar() {
             console.log('[migrar] alunos.data_nascimento agora é opcional.');
         }
 
+        // --- segurança: versão do token -------------------------------------
+        // Aumenta a cada troca de senha: sessões abertas e links de redefinição antigos
+        // deixam de valer (ver middlewares/authenticar.js).
+        await garantirColuna('usuarios', 'token_versao', 'INT UNSIGNED NOT NULL DEFAULT 0');
+
+        // --- aviso por e-mail de mensagem não lida no chat ---------------------
+        // email_avisado: 1 quando o destinatário já recebeu e-mail sobre esta mensagem.
+        // Ao criar a coluna, as mensagens antigas ficam como avisadas (sem e-mail retroativo).
+        if (await garantirColuna('chat_mensagens', 'email_avisado', 'TINYINT(1) NOT NULL DEFAULT 0')) {
+            await db.query('UPDATE chat_mensagens SET email_avisado = 1');
+        }
+        // Último e-mail de aviso por conversa e direção (no máximo um a cada 30 minutos).
+        await criarTabelaSePreciso('chat_avisos_email',
+            `CREATE TABLE chat_avisos_email (
+                responsavel_id INT NOT NULL,
+                direcao ENUM('PARA_RESPONSAVEL','PARA_SECRETARIA') NOT NULL,
+                enviado_em DATETIME NOT NULL,
+                PRIMARY KEY (responsavel_id, direcao),
+                FOREIGN KEY (responsavel_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+            `CREATE TABLE chat_avisos_email (
+                responsavel_id INT NOT NULL,
+                direcao ENUM('PARA_RESPONSAVEL','PARA_SECRETARIA') NOT NULL,
+                enviado_em DATETIME NOT NULL,
+                PRIMARY KEY (responsavel_id, direcao)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+
+        // --- chat interno secretaria <-> portaria -------------------------------
+        // Um canal único entre as duas equipes. "lado" diz de qual equipe veio a mensagem.
+        await criarTabelaSePreciso('chat_equipe',
+            `CREATE TABLE chat_equipe (
+                mensagem_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                remetente_id INT NOT NULL,
+                lado ENUM('SECRETARIA','PORTARIA') NOT NULL,
+                texto VARCHAR(1000) NOT NULL,
+                criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                client_uuid VARCHAR(40) NULL,
+                UNIQUE KEY uq_equipe_remetente_uuid (remetente_id, client_uuid),
+                KEY idx_equipe_lado (lado, mensagem_id),
+                FOREIGN KEY (remetente_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+            `CREATE TABLE chat_equipe (
+                mensagem_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                remetente_id INT NOT NULL,
+                lado ENUM('SECRETARIA','PORTARIA') NOT NULL,
+                texto VARCHAR(1000) NOT NULL,
+                criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                client_uuid VARCHAR(40) NULL,
+                UNIQUE KEY uq_equipe_remetente_uuid (remetente_id, client_uuid),
+                KEY idx_equipe_lado (lado, mensagem_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+        // Até qual mensagem cada usuário já leu (para o contador e o "visto").
+        await criarTabelaSePreciso('chat_equipe_leitura',
+            `CREATE TABLE chat_equipe_leitura (
+                usuario_id INT NOT NULL PRIMARY KEY,
+                ultima_lida_id BIGINT NOT NULL DEFAULT 0,
+                atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
+            `CREATE TABLE chat_equipe_leitura (
+                usuario_id INT NOT NULL PRIMARY KEY,
+                ultima_lida_id BIGINT NOT NULL DEFAULT 0,
+                atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+
+        // Índice que acelera a fila de e-mails (pendentes mais antigos primeiro).
+        await garantirIndice('alertas_email_envios', 'idx_alertas_fila', '(status, criado_em)');
+
+        await migrarRecursosSeguranca();
+
         console.log('[migrar] Estrutura do banco conferida.');
     } catch (err) {
         console.error('[migrar] Erro ao conferir a estrutura do banco:', err.message);
     }
 }
 
-module.exports = { migrar };
+// Notificações no celular, auditoria, login em duas etapas, backup e LGPD.
+// O SQL equivalente (para aplicar à mão) está em database/migration_seguranca_lgpd_push_up.sql.
+const TABELAS_NOVAS = [
+    // Configurações internas geradas pelo próprio sistema (ex.: chaves das notificações).
+    ['config_sistema', `CREATE TABLE config_sistema (
+        chave VARCHAR(60) NOT NULL PRIMARY KEY,
+        valor TEXT NOT NULL,
+        atualizado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, null],
+    // Aparelhos que aceitaram receber notificações (um usuário pode ter vários).
+    ['push_inscricoes', `CREATE TABLE push_inscricoes (
+        inscricao_id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL,
+        endpoint_hash CHAR(64) NOT NULL,
+        endpoint TEXT NOT NULL,
+        p256dh VARCHAR(200) NOT NULL,
+        auth VARCHAR(100) NOT NULL,
+        aparelho VARCHAR(120) NULL,
+        criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ultimo_envio DATETIME NULL,
+        UNIQUE KEY uq_push_endpoint (endpoint_hash),
+        KEY idx_push_usuario (usuario_id),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, 'fk'],
+    // Evita mandar a mesma notificação duas vezes (o agendador roda de minuto em minuto).
+    ['push_envios', `CREATE TABLE push_envios (
+        pedido_id INT NOT NULL,
+        tipo VARCHAR(30) NOT NULL,
+        criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (pedido_id, tipo)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, null],
+    // Registro de quem fez o quê. Só recebe INSERT: nada é alterado depois de gravado.
+    ['auditoria', `CREATE TABLE auditoria (
+        auditoria_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        usuario_id INT NULL,
+        usuario_nome VARCHAR(150) NULL,
+        papel VARCHAR(20) NULL,
+        acao VARCHAR(60) NOT NULL,
+        alvo_tipo VARCHAR(30) NULL,
+        alvo_id INT NULL,
+        descricao VARCHAR(500) NOT NULL,
+        ip VARCHAR(45) NULL,
+        KEY idx_auditoria_data (criado_em),
+        KEY idx_auditoria_acao (acao, criado_em),
+        KEY idx_auditoria_usuario (usuario_id, criado_em)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, null],
+    // Login em duas etapas: código de 6 números enviado por e-mail (guardado só o hash).
+    ['login_codigos', `CREATE TABLE login_codigos (
+        codigo_id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL,
+        desafio_hash CHAR(64) NOT NULL,
+        codigo_hash CHAR(64) NOT NULL,
+        expira_em DATETIME NOT NULL,
+        tentativas TINYINT NOT NULL DEFAULT 0,
+        usado TINYINT(1) NOT NULL DEFAULT 0,
+        criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_login_desafio (desafio_hash),
+        KEY idx_login_usuario (usuario_id, criado_em),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, 'fk'],
+    // "Confiar neste aparelho por 30 dias" (não pede o código de novo nesse navegador).
+    ['dispositivos_confiaveis', `CREATE TABLE dispositivos_confiaveis (
+        dispositivo_id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL,
+        token_hash CHAR(64) NOT NULL,
+        aparelho VARCHAR(120) NULL,
+        criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expira_em DATETIME NOT NULL,
+        UNIQUE KEY uq_dispositivo_token (token_hash),
+        KEY idx_dispositivo_usuario (usuario_id),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, 'fk']
+];
+
+async function migrarRecursosSeguranca() {
+    for (const [nome, sql, temFk] of TABELAS_NOVAS) {
+        try {
+            const semFk = temFk ? sql.replace(/,\s*FOREIGN KEY[^\n]*/g, '') : sql;
+            await criarTabelaSePreciso(nome, sql, semFk);
+        } catch (err) {
+            console.error(`[migrar] Não foi possível criar ${nome}: ${err.message}`);
+        }
+    }
+    // LGPD: quando a pessoa aceitou o termo e a política de privacidade (e qual versão).
+    await garantirColuna('usuarios', 'termos_versao', 'VARCHAR(20) NULL');
+    await garantirColuna('usuarios', 'termos_aceitos_em', 'DATETIME NULL');
+    // Conta apagada a pedido do titular: dados pessoais anonimizados, histórico da escola mantido.
+    await garantirColuna('usuarios', 'excluido_em', 'DATETIME NULL');
+}
+
+module.exports = { migrar, TABELAS_NOVAS };
