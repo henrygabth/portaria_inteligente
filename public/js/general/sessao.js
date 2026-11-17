@@ -13,7 +13,7 @@
                 if (corpo && corpo.sessaoExpirada) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('usuario');
-                    alert(corpo.erro || 'Sua sessão expirou. Faça login novamente.');
+                    await PIDialogo.avisar(corpo.erro || 'Sua sessão expirou. Faça login novamente.');
                     window.location.href = 'login.html';
                 }
             } catch (_) { /* resposta sem JSON: ignora */ }
@@ -25,7 +25,7 @@
                 if (corpo && corpo.perfilDesativado) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('usuario');
-                    alert(corpo.erro || 'Este perfil foi desativado.');
+                    await PIDialogo.avisar(corpo.erro || 'Este perfil foi desativado.');
                     window.location.href = 'login.html';
                 }
             } catch (_) { /* resposta sem JSON: ignora */ }

@@ -24,8 +24,24 @@
             }
         });
     }
+    // Samsung Internet gera o app de um jeito antigo, e o Google Play Protect bloqueia
+    // ("App de risco bloqueado... versão mais antiga do Android"). Pelo Chrome o app é gerado
+    // pelo próprio Google e instala sem aviso: então, no navegador da Samsung, indicamos o Chrome.
+    const samsung = /SamsungBrowser/i.test(navigator.userAgent);
+    function abrirNoChrome() {
+        const url = new URL(location.href);
+        location.href = `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent('https://play.google.com/store/apps/details?id=com.android.chrome')};end`;
+    }
+    if (samsung && !instalado()) {
+        window.addEventListener('load', () => setTimeout(() => {
+            aviso('<strong>Instale pelo Chrome</strong>Por este navegador o Android mostra um alerta indevido.', true);
+            const botao = document.querySelector('.pi-instalar-sim');
+            if (botao) { botao.textContent = 'Abrir no Chrome'; botao.addEventListener('click', e => { e.stopPropagation(); abrirNoChrome(); }); }
+        }, 2500));
+    }
     window.addEventListener('beforeinstallprompt', e => {
         e.preventDefault(); pedido = e;
+        if (samsung) return; // já mostramos o aviso para abrir no Chrome
         aviso('<strong>Portaria Inteligente no celular</strong>Instale como aplicativo e abra direto da tela inicial.', true);
     });
     window.addEventListener('appinstalled', () => { const el = document.querySelector('.pi-instalar'); if (el) el.remove(); });

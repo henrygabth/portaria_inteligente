@@ -122,7 +122,7 @@
                 previa.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="Pré-visualização da foto 3x4">`;
                 previa.classList.add('com-foto');
             } catch (err) {
-                input.value = ''; alert(err.message);
+                input.value = ''; PIDialogo.avisar(err.message);
                 previa.innerHTML = '<i class="fas fa-user"></i>'; previa.classList.remove('com-foto');
             }
         });

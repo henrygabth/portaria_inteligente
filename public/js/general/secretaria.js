@@ -49,7 +49,11 @@ async function salvarVinculo(event) {
 
     const campoFoto = document.getElementById('fotoAlunoVinculo');
     const fotoPronta = campoFoto ? campoFoto._fotoPronta : null;
-    if (!fotoPronta && !confirm('Nenhuma foto 3x4 foi escolhida. Sem foto, o porteiro não consegue identificar o aluno. Continuar mesmo assim?')) {
+    if (!fotoPronta && !(await PIDialogo.confirmar({
+        titulo: 'Continuar sem foto?',
+        texto: 'Nenhuma foto 3x4 foi escolhida. Sem foto, o porteiro não consegue conferir o rosto do aluno na saída.',
+        ok: 'Continuar sem foto', cancelar: 'Escolher foto', tipo: 'perigo'
+    }))) {
         campoFoto?.focus();
         return;
     }
@@ -85,16 +89,16 @@ async function salvarVinculo(event) {
                 try { await PIFoto.enviar(data.aluno_id, fotoPronta); msg += '\n\nFoto 3x4 do aluno salva.'; }
                 catch (erroFoto) { msg += `\n\nA conta foi criada, mas a foto NÃO foi salva: ${erroFoto.message}\nAdicione a foto depois em Gerenciar Alunos.`; }
             }
-            alert(msg);
+            PIDialogo.avisar(msg);
             document.getElementById('formVincular').reset();
             const previa = document.getElementById('fotoAlunoPrevia');
             if (previa) { previa.innerHTML = '<i class="fas fa-user"></i>'; previa.classList.remove('com-foto'); }
             if (campoFoto) campoFoto._fotoPronta = null;
         } else {
-            alert('Erro: ' + (data.erro || 'Falha ao criar a conta do responsável'));
+            PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao criar a conta do responsável'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     }
 }
 
@@ -204,7 +208,6 @@ async function carregarTurmasVinculo() {
             select.appendChild(option);
         });
     } catch (err) {
-        console.error('Erro ao carregar turmas:', err);
         select.innerHTML = '<option value="" disabled selected>Erro ao carregar turmas</option>';
     }
 }
@@ -278,7 +281,9 @@ async function carregarPendentes() {
         if (dados.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8">Nenhuma solicitação pendente.</td></tr>';
         } else {
+            pendentesNaTela.clear();
             dados.forEach(pedido => {
+                pendentesNaTela.set(Number(pedido.pedidos_saida_id), pedido);
                 const tr = document.createElement('tr');
                 const dataHora = pedido.data_criacao
                     ? new Date(pedido.data_criacao).toLocaleString('pt-BR')
@@ -309,14 +314,24 @@ async function carregarPendentes() {
         const elemCount = document.getElementById('count-pendentes');
         if (elemCount) elemCount.textContent = dados.length;
     } catch (err) {
-        console.error('Erro ao carregar pendentes:', err);
         tbody.innerHTML = '<tr><td colspan="8" style="color:red;">Erro ao carregar pendentes.</td></tr>';
     }
 }
 
 // Aprovar ou rejeitar pedido
+const pendentesNaTela = new Map();
 async function decidir(id, acao, observacao = null) {
-    if (acao === 'aceitar' && !confirm("Deseja realmente APROVAR esta saída?")) return;
+    if (acao === 'aceitar') {
+        const p = pendentesNaTela.get(Number(id)) || {};
+        const casa = p.tipo === 'CASA';
+        const quando = p.hora_prevista_saida ? ` às ${formatarHorario(p.hora_prevista_saida)}` : '';
+        const ok = await PIDialogo.confirmar({
+            titulo: 'Aprovar esta saída?',
+            texto: `${p.nome_aluno || 'O aluno'}${p.turma ? ` (${p.turma})` : ''} poderá sair${quando}${casa ? ' e não volta hoje' : p.hora_prevista_retorno ? `, com retorno previsto às ${formatarHorario(p.hora_prevista_retorno)}` : ''}.\nO responsável será avisado e a portaria poderá liberar a saída.`,
+            ok: 'Aprovar saída', cancelar: 'Voltar', tipo: 'sucesso'
+        });
+        if (!ok) return;
+    }
 
     const token = localStorage.getItem('token');
     let url = '';
@@ -334,15 +349,15 @@ async function decidir(id, acao, observacao = null) {
         });
 
         if (resp.ok) {
-            alert(`Pedido ${acao === 'aceitar' ? 'aprovado' : 'negado'} com sucesso!`);
+            PIDialogo.avisar(`Pedido ${acao === 'aceitar' ? 'aprovado' : 'negado'} com sucesso!`);
             carregarPendentes();
             carregarHistoricoSecretaria();
         } else {
             const erro = await resp.json();
-            alert('Erro: ' + (erro.erro || 'Falha na operação'));
+            PIDialogo.avisar('Erro: ' + (erro.erro || 'Falha na operação'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     }
 }
 
@@ -364,7 +379,7 @@ function confirmarNegativa() {
     const campoMotivo = document.getElementById('motivoNegativa');
     const motivo = campoMotivo ? campoMotivo.value.trim() : '';
     if (!motivo) {
-        alert('Informe o motivo da negativa.');
+        PIDialogo.avisar('Informe o motivo da negativa.');
         return;
     }
     decidir(pedidoSelecionado, 'negar', motivo);
@@ -434,9 +449,12 @@ function renderizarHistoricoSecretaria() {
 }
 
 async function cancelarPedidoSecretaria(id) {
-    const motivo = prompt('Motivo do cancelamento da solicitação aprovada:');
+    const motivo = await PIDialogo.pedirTexto({
+        titulo: 'Cancelar saída aprovada', texto: 'O responsável e a portaria serão avisados do cancelamento.',
+        rotulo: 'Motivo do cancelamento', maximo: 500, ok: 'Cancelar saída', cancelar: 'Voltar', tipo: 'perigo',
+        erroVazio: 'Informe o motivo do cancelamento.'
+    });
     if (motivo === null) return;
-    if (!motivo.trim() || motivo.trim().length > 500) return alert('Informe um motivo de até 500 caracteres.');
     try {
         const resposta = await fetch(`${API_URL}/pedidos/cancelar/${id}`, {
             method: 'PUT',
@@ -444,9 +462,9 @@ async function cancelarPedidoSecretaria(id) {
             body: JSON.stringify({ observacao: motivo.trim() })
         });
         const dados = await resposta.json();
-        alert(dados.mensagem || dados.erro || 'Não foi possível cancelar.');
+        PIDialogo.avisar(dados.mensagem || dados.erro || 'Não foi possível cancelar.');
         if (resposta.ok) carregarHistoricoSecretaria();
-    } catch (_) { alert('Erro de conexão com o servidor.'); }
+    } catch (_) { PIDialogo.avisar('Erro de conexão com o servidor.'); }
 }
 
 function fecharOcorrencias() {
@@ -516,7 +534,6 @@ async function carregarHistoricoSecretaria() {
         const elemCountHoje = document.getElementById('count-hoje');
         if (elemCountHoje) elemCountHoje.textContent = aprovadasHoje;
     } catch (err) {
-        console.error('Erro ao carregar histórico:', err);
         tbody.innerHTML = '<tr><td colspan="7" style="color:red;">Erro ao carregar histórico.</td></tr>';
     }
 }
@@ -557,7 +574,6 @@ async function carregarGerenciarAlunos() {
 
         renderizarGerenciarAlunos(alunosCache);
     } catch (err) {
-        console.error('Erro ao carregar gerenciamento de alunos:', err);
         tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar alunos.</td></tr>';
     }
 }
@@ -636,7 +652,7 @@ document.getElementById('inputFotoGerenciar')?.addEventListener('change', async 
         if (aluno) aluno.tem_foto = 1;
         aplicarFiltrosAlunos();
     } catch (err) {
-        alert(err.message);
+        PIDialogo.avisar(err.message);
     } finally {
         input.value = '';
     }
@@ -689,12 +705,12 @@ async function salvarAlteracaoAluno(aluno_id) {
         const data = await resp.json();
 
         if (resp.ok) {
-            alert('Aluno atualizado com sucesso!');
+            PIDialogo.avisar('Aluno atualizado com sucesso!');
         } else {
-            alert('Erro: ' + (data.erro || 'Falha ao atualizar aluno'));
+            PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao atualizar aluno'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     }
 }
 
@@ -716,7 +732,6 @@ async function carregarPerfis() {
         perfisCache = await resp.json();
         aplicarFiltrosPerfis();
     } catch (err) {
-        console.error('Erro ao carregar perfis:', err);
         tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar perfis.</td></tr>';
     }
 }
@@ -775,7 +790,10 @@ async function alterarStatusPerfil(id, ativar) {
     const pergunta = ativar
         ? `Reativar o perfil de ${perfil.nome}? Ele voltará a poder entrar no sistema.`
         : `Desativar o perfil de ${perfil.nome}? Ele perderá o acesso ao sistema imediatamente.`;
-    if (!confirm(pergunta)) return;
+    if (!(await PIDialogo.confirmar({
+        titulo: ativar ? 'Reativar perfil?' : 'Desativar perfil?', texto: pergunta,
+        ok: ativar ? 'Reativar' : 'Desativar', tipo: ativar ? 'normal' : 'perigo'
+    }))) return;
 
     try {
         const resp = await fetch(`${API_URL}/usuarios/${id}/status`, {
@@ -785,14 +803,14 @@ async function alterarStatusPerfil(id, ativar) {
         });
         const data = await resp.json();
         if (!resp.ok) {
-            alert('Erro: ' + (data.erro || 'Falha ao alterar o perfil'));
+            PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao alterar o perfil'));
             return;
         }
         perfil.ativo = ativar;
         perfil.status = ativar ? '1' : '0';
         aplicarFiltrosPerfis();
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     }
 }
 

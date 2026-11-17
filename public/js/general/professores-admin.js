@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await carregarCadastroProf();
                 const li = document.querySelector(`.pa-prof[data-id="${id}"]`);
                 if (li) { li.classList.add('salvo'); setTimeout(() => li.classList.remove('salvo'), 1600); }
-            } catch (err) { alert(err.message); salvar.disabled = false; }
+            } catch (err) { PIDialogo.avisar(err.message); salvar.disabled = false; }
         }
     });
 

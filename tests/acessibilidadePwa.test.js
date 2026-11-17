@@ -63,3 +63,25 @@ test('CSP libera o VLibras e o service worker', () => {
     assert.match(csp, /worker-src 'self' blob:/);
     assert.match(csp, /frame-ancestors 'none'/);
 });
+
+test('nenhuma caixa cinza do navegador (alert/confirm/prompt) nem console nas telas', () => {
+    const dir = path.join(pub, 'js', 'general');
+    for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.js') && f !== 'dialogo.js')) {
+        const js = fs.readFileSync(path.join(dir, f), 'utf8');
+        assert.doesNotMatch(js, /(?<![\w.$])(alert|confirm|prompt)\(/, f);
+        assert.doesNotMatch(js, /console\.(log|error|warn|info|debug)\(/, f);
+    }
+    for (const p of paginas) assert.match(ler(p).split('</head>')[0], /js\/general\/dialogo\.js/, p);
+});
+
+test('aprovar saída pede confirmação na janela do sistema, com o nome do aluno', () => {
+    const js = ler('js/general/secretaria.js');
+    assert.match(js, /PIDialogo\.confirmar\(\{\s*titulo: 'Aprovar esta saída\?'/);
+    assert.match(js, /ok: 'Aprovar saída'/);
+});
+
+test('no navegador da Samsung, o app é instalado pelo Chrome (evita alerta do Play Protect)', () => {
+    const js = ler('js/general/pwa.js');
+    assert.match(js, /SamsungBrowser/);
+    assert.match(js, /package=com\.android\.chrome/);
+});

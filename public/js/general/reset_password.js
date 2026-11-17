@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('resetForm');
 
     if (!token) {
-        alert('Link inválido ou expirado. Solicite a recuperação de senha novamente.');
-        window.location.href = 'recover_password.html';
+        PIDialogo.avisar('Link inválido ou expirado. Solicite a recuperação de senha novamente.', { tipo: 'erro' })
+            .then(() => { window.location.href = 'recover_password.html'; });
         return;
     }
 
@@ -41,13 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await resp.json();
 
             if (resp.ok) {
-                alert('Senha redefinida com sucesso! Faça login com a nova senha.');
+                await PIDialogo.avisar('Senha redefinida com sucesso! Faça login com a nova senha.');
                 window.location.href = 'login.html';
             } else {
-                alert('Erro: ' + (data.erro || 'Não foi possível redefinir a senha.'));
+                PIDialogo.avisar('Erro: ' + (data.erro || 'Não foi possível redefinir a senha.'));
             }
         } catch (err) {
-            alert('Erro de conexão com o servidor.');
+            PIDialogo.avisar('Erro de conexão com o servidor.');
         } finally {
             btn.disabled = false;
         }

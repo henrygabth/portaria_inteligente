@@ -135,7 +135,6 @@ async function carregarSaidas() {
         const elemQtd = document.getElementById('qtd-aguardando');
         if (elemQtd) elemQtd.textContent = dados.length;
     } catch (err) {
-        console.error('Erro ao carregar saídas:', err);
         mensagemErro(tbody, 'Erro ao carregar saídas aprovadas.');
     }
 }
@@ -201,7 +200,7 @@ async function liberarSaida(id, paraCasa = false) {
             method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ pedido_id: Number(id) })
         }).catch(() => {});
-        alert('Saída NÃO registrada. A secretaria foi avisada para conferir a situação.');
+        PIDialogo.avisar('A saída NÃO foi registrada. A secretaria foi avisada para conferir a situação.', { tipo: 'erro', titulo: 'Saída bloqueada' });
         return;
     }
     if (resposta !== 'sim') return;
@@ -213,16 +212,16 @@ async function liberarSaida(id, paraCasa = false) {
         });
 
         if (resp.ok) {
-            alert(paraCasa ? 'Aluno liberado para ir para casa!' : 'Saída registrada com sucesso!');
+            PIDialogo.avisar(paraCasa ? 'Aluno liberado para ir para casa!' : 'Saída registrada com sucesso!');
             carregarSaidas();
             carregarEmSaida();
             carregarHistoricoPortaria();
         } else {
             const erro = await resp.json();
-            alert('Erro: ' + (erro.erro || 'Falha ao registrar a saída'));
+            PIDialogo.avisar('Erro: ' + (erro.erro || 'Falha ao registrar a saída'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     }
 }
 
@@ -278,14 +277,13 @@ async function carregarEmSaida() {
         const elemQtdFora = document.getElementById('qtd-fora');
         if (elemQtdFora) elemQtdFora.textContent = dados.length;
     } catch (err) {
-        console.error('Erro ao carregar alunos fora da escola:', err);
         mensagemErro(tbody, 'Erro ao carregar alunos fora da escola.');
     }
 }
 
 async function registrarRetorno(id) {
     const token = localStorage.getItem('token');
-    if (!confirm('Confirmar o retorno do aluno à escola?')) return;
+    if (!(await PIDialogo.confirmar({ titulo: 'Registrar retorno?', texto: 'Confirmar que o aluno voltou para a escola agora?', ok: 'Registrar retorno', tipo: 'sucesso' }))) return;
 
     try {
         const resp = await fetch(`${API_URL}/pedidos/retorno/${id}`, {
@@ -294,15 +292,15 @@ async function registrarRetorno(id) {
         });
 
         if (resp.ok) {
-            alert('Retorno do aluno registrado com sucesso!');
+            PIDialogo.avisar('Retorno do aluno registrado com sucesso!');
             carregarEmSaida();
             carregarHistoricoPortaria();
         } else {
             const erro = await resp.json();
-            alert('Erro: ' + (erro.erro || 'Falha ao registrar retorno'));
+            PIDialogo.avisar('Erro: ' + (erro.erro || 'Falha ao registrar retorno'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     }
 }
 
@@ -394,7 +392,6 @@ async function carregarHistoricoPortaria() {
 
         renderizarHistoricoPortaria();
     } catch (err) {
-        console.error('Erro ao carregar histórico:', err);
         tbody.innerHTML = '<tr><td colspan="7" style="color:red;">Erro ao carregar histórico de saídas.</td></tr>';
     }
 }

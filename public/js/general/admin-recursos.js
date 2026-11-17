@@ -69,7 +69,7 @@
         $('auditoriaFiltros').addEventListener('submit', e => { e.preventDefault(); aud.pagina = 1; carregarAuditoria(); });
         $('audAnterior').addEventListener('click', () => { aud.pagina--; carregarAuditoria(); });
         $('audProxima').addEventListener('click', () => { aud.pagina++; carregarAuditoria(); });
-        $('audExportar').addEventListener('click', () => baixar('/auditoria/exportar?' + filtrosAuditoria(), 'auditoria.csv').catch(e => alert(e.message)));
+        $('audExportar').addEventListener('click', () => baixar('/auditoria/exportar?' + filtrosAuditoria(), 'auditoria.csv').catch(e => PIDialogo.avisar(e.message)));
     }
 
     // ================================================================ SAÚDE + BACKUP
@@ -105,12 +105,12 @@
         if (!ehAdmin()) { $('saudeBotoesBackup').hidden = true; $('saudeSoAdmin').hidden = false; }
         $('btnBaixarBackup').addEventListener('click', async e => {
             const b = e.currentTarget; b.disabled = true; const t = b.innerHTML; b.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Gerando...';
-            try { await baixar('/sistema/backup', 'portaria-backup.sql.gz'); } catch (err) { alert(err.message); }
+            try { await baixar('/sistema/backup', 'portaria-backup.sql.gz'); } catch (err) { PIDialogo.avisar(err.message); }
             b.disabled = false; b.innerHTML = t;
         });
         $('btnGerarBackup').addEventListener('click', async e => {
             const b = e.currentTarget; b.disabled = true;
-            try { alert((await api('/sistema/backup', { method: 'POST', body: '{}' })).mensagem); carregarSaude(); } catch (err) { alert(err.message); }
+            try { PIDialogo.avisar((await api('/sistema/backup', { method: 'POST', body: '{}' })).mensagem); carregarSaude(); } catch (err) { PIDialogo.avisar(err.message); }
             b.disabled = false;
         });
     }

@@ -2,7 +2,7 @@
 // - /api NUNCA vai para o cache (pedidos, liberações e mensagens são sempre ao vivo).
 // - Páginas: rede primeiro; sem internet, mostra a última versão salva ou offline.html.
 // - CSS, JS e imagens: entrega o que está salvo e atualiza em segundo plano.
-const VERSAO = 'pi-v2';
+const VERSAO = 'pi-v3';
 const ESSENCIAIS = ['/offline.html', '/css/acessibilidade.css', '/js/general/acessibilidade.js',
     '/img/icones/icone-192.png', '/img/logo_pi.png', '/manifest.webmanifest'];
 

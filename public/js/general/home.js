@@ -86,7 +86,6 @@ async function carregarMeusAlunos() {
             });
         });
     } catch (err) {
-        console.error('Erro ao carregar alunos vinculados:', err);
         [selectAluno, selectAlunoRecorrente].forEach(select => {
             if (select) select.innerHTML = '<option value="" disabled selected>Erro ao carregar alunos</option>';
         });
@@ -149,7 +148,6 @@ async function carregarHistorico() {
             tbody.appendChild(tr);
         });
     } catch (err) {
-        console.error('Erro ao carregar histórico:', err);
         tbody.innerHTML = '<tr><td colspan="5" style="color:red;">Erro ao carregar histórico.</td></tr>';
     }
 }
@@ -172,7 +170,6 @@ async function preencherDadosConta() {
         if (document.getElementById('telefoneResponsavel')) document.getElementById('telefoneResponsavel').value = usuario.telefone || '';
         if (document.getElementById('emailResponsavel')) document.getElementById('emailResponsavel').value = usuario.email || '';
     } catch (err) {
-        console.error('Erro ao carregar dados da conta:', err);
     }
 }
 
@@ -226,7 +223,7 @@ if (formSolicitacao) {
             motivo: tipo === 'CASA' ? (document.getElementById('motivoSaida')?.value.trim() || '') : 'Saída para Almoço'
         };
         if (tipo === 'CASA' && corpo.motivo.length < 3) {
-            alert('Informe o motivo da saída do aluno.');
+            PIDialogo.avisar('Informe o motivo da saída do aluno.');
             document.getElementById('motivoSaida')?.focus();
             return;
         }
@@ -244,15 +241,15 @@ if (formSolicitacao) {
             const data = await resp.json();
 
             if (resp.ok) {
-                alert(tipo === 'CASA' ? 'Pedido de liberação para ir para casa enviado com sucesso!' : 'Solicitação de saída para almoço enviada com sucesso!');
+                PIDialogo.avisar(tipo === 'CASA' ? 'Pedido de liberação para ir para casa enviado com sucesso!' : 'Solicitação de saída para almoço enviada com sucesso!');
                 formSolicitacao.reset();
                 ajustarTipoSaida();
                 mostrarTela('tela-historico');
             } else {
-                alert('Erro: ' + (data.erro || 'Falha ao enviar solicitação'));
+                PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao enviar solicitação'));
             }
         } catch (err) {
-            alert('Erro de conexão com o servidor');
+            PIDialogo.avisar('Erro de conexão com o servidor');
         }
     });
 }
@@ -290,15 +287,15 @@ if (formConta) {
 
             if (resp.ok) {
                 if (data.token) { try { localStorage.setItem('token', data.token); } catch (_) { /* sem storage */ } }
-                alert('Dados atualizados com sucesso!');
+                PIDialogo.avisar('Dados atualizados com sucesso!');
                 document.getElementById('senhaAtual').value = '';
                 document.getElementById('novaSenha').value = '';
                 preencherDadosConta();
             } else {
-                alert('Erro: ' + (data.erro || 'Falha ao atualizar conta'));
+                PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao atualizar conta'));
             }
         } catch (err) {
-            alert('Erro de conexão com o servidor');
+            PIDialogo.avisar('Erro de conexão com o servidor');
         }
     });
 }
@@ -326,7 +323,7 @@ if (formRecorrente) {
             .map(cb => Number(cb.value));
 
         if (dias.length === 0) {
-            alert('Escolha pelo menos um dia da semana.');
+            PIDialogo.avisar('Escolha pelo menos um dia da semana.');
             return;
         }
 
@@ -351,16 +348,16 @@ if (formRecorrente) {
             const data = await resp.json();
 
             if (resp.ok) {
-                alert(data.mensagem || 'Pedido recorrente criado com sucesso!');
+                PIDialogo.avisar(data.mensagem || 'Pedido recorrente criado com sucesso!');
                 formRecorrente.reset();
                 carregarMeusAlunos();
                 carregarPedidosRecorrentes();
                 if (data.pedido_hoje) carregarHistorico();
             } else {
-                alert('Erro: ' + (data.erro || 'Falha ao criar pedido recorrente'));
+                PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao criar pedido recorrente'));
             }
         } catch (err) {
-            alert('Erro de conexão com o servidor');
+            PIDialogo.avisar('Erro de conexão com o servidor');
         }
     });
 }
@@ -414,30 +411,29 @@ async function carregarPedidosRecorrentes() {
                         body: JSON.stringify({ ativo: btn.dataset.ativo === '1' })
                     });
                     if (resp.ok) carregarPedidosRecorrentes();
-                    else alert('Erro ao atualizar pedido recorrente');
+                    else PIDialogo.avisar('Erro ao atualizar pedido recorrente');
                 } catch (err) {
-                    alert('Erro de conexão com o servidor');
+                    PIDialogo.avisar('Erro de conexão com o servidor');
                 }
             });
         });
 
         tbody.querySelectorAll('.btn-remover-recorrente').forEach(btn => {
             btn.addEventListener('click', async () => {
-                if (!confirm('Remover este pedido recorrente?')) return;
+                if (!(await PIDialogo.confirmar({ titulo: 'Remover horário fixo?', texto: 'As próximas solicitações automáticas deste horário deixam de ser criadas.', ok: 'Remover', tipo: 'perigo' }))) return;
                 try {
                     const resp = await fetch(`${API_URL}/pedidos-recorrentes/${btn.dataset.id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (resp.ok) carregarPedidosRecorrentes();
-                    else alert('Erro ao remover pedido recorrente');
+                    else PIDialogo.avisar('Erro ao remover pedido recorrente');
                 } catch (err) {
-                    alert('Erro de conexão com o servidor');
+                    PIDialogo.avisar('Erro de conexão com o servidor');
                 }
             });
         });
     } catch (err) {
-        console.error('Erro ao carregar pedidos recorrentes:', err);
         tbody.innerHTML = '<tr><td colspan="6" style="color:red;">Erro ao carregar pedidos recorrentes.</td></tr>';
     }
 }

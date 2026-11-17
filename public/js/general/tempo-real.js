@@ -11,7 +11,7 @@
     let parado = false;
 
     function disparar(evento, dados) {
-        (ouvintes[evento] || []).forEach(fn => { try { fn(dados); } catch (e) { console.error('[tempo-real]', e); } });
+        (ouvintes[evento] || []).forEach(fn => { try { fn(dados); } catch (_) { /* um ouvinte com erro não derruba os outros */ } });
     }
 
     function processar(bloco) {

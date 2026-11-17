@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
 
     if (!token) {
-        alert('Sessão expirada. Faça login novamente.');
+        await PIDialogo.avisar('Sessão expirada. Faça login novamente.', { tipo: 'erro' });
         window.location.href = 'login.html';
         return;
     }
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (resposta.status === 401) {
-            alert('Sessão expirada. Faça login novamente.');
+            await PIDialogo.avisar('Sessão expirada. Faça login novamente.', { tipo: 'erro' });
             localStorage.removeItem('token');
             window.location.href = 'login.html';
             return;
@@ -41,8 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('emailResponsavel').value   = dados.email     || '';
 
     } catch (erro) {
-        console.error('Erro ao carregar conta:', erro);
-        alert('Não foi possível carregar os dados da conta.');
+        PIDialogo.avisar('Não foi possível carregar os dados da conta.');
     }
 });
 
@@ -79,13 +78,13 @@ document.getElementById('formConta').addEventListener('submit', async (e) => {
         const resultado = await resposta.json();
 
         if (!resposta.ok) {
-            alert(`Erro: ${resultado.erro}`);
+            PIDialogo.avisar(`Erro: ${resultado.erro}`);
             return;
         }
 
         // Ao trocar a senha o servidor encerra as outras sessões e devolve um token novo para esta.
         if (resultado.token) { try { localStorage.setItem('token', resultado.token); } catch (_) { /* sem storage */ } }
-        alert('Dados atualizados com sucesso!');
+        PIDialogo.avisar('Dados atualizados com sucesso!');
         if (corpo.novaSenha) { try { localStorage.removeItem('sugerirTrocaSenha'); } catch (_) { /* sem storage */ } }
 
         // Limpa os campos de senha após salvar
@@ -93,7 +92,6 @@ document.getElementById('formConta').addEventListener('submit', async (e) => {
         document.getElementById('novaSenha').value  = '';
 
     } catch (erro) {
-        console.error('Erro ao salvar conta:', erro);
-        alert('Erro de conexão ao salvar os dados.');
+        PIDialogo.avisar('Erro de conexão ao salvar os dados.');
     }
 });

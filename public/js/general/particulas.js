@@ -66,7 +66,6 @@
         try {
             await carregarBiblioteca();
         } catch (erro) {
-            console.warn('[particulas]', erro.message);
             return;
         }
         destruirAnterior();

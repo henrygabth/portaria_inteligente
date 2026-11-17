@@ -148,3 +148,14 @@ Criado automaticamente ao iniciar o servidor (utils/migrar.js) ou por `database/
 
 ### Testes
 - `tests/recursosSeguranca.test.js` (26 testes). Total: **117 testes passando**.
+
+---
+
+## Ajustes: janelas do sistema, console e instalação no Samsung
+
+- **Janelas no visual do sistema.** Saíram as caixas cinzas do navegador ("portaria-inteligente.onrender.com diz..."). As confirmações e os avisos agora usam a janela do sistema (`js/general/dialogo.js`):
+  - **Aprovar saída:** mostra o aluno, a turma e os horários antes de aprovar.
+  - **Registrar retorno, desativar perfil, remover horário fixo e vincular sem foto:** pedem confirmação.
+  - **Cancelar saída aprovada:** o motivo é digitado na própria janela.
+- **Console limpo.** As mensagens `console.error` e `console.warn` saíram das telas. Os logs do servidor continuam, porque aparecem só no painel do Render e ajudam a achar erros.
+- **Instalação pelo navegador da Samsung.** O Google Play Protect mostra "App de risco bloqueado" quando o app é instalado pelo Samsung Internet. É um problema conhecido desse navegador com qualquer aplicativo web. Nele, o sistema agora mostra "Instale pelo Chrome", com um botão que abre o Chrome. Pelo Chrome a instalação acontece sem aviso.

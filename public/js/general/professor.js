@@ -188,7 +188,7 @@ function avisarNovoComunicado(qtd, ultimo) {
 }
 async function marcarLido(id) {
     try { await consultarProf(`/comunicados/${id}/lido`, { method: 'PUT' }); await carregarComunicados(); }
-    catch (err) { alert(err.message); }
+    catch (err) { PIDialogo.avisar(err.message); }
 }
 // O painel carrega sempre: ele também alimenta o filtro de alunos da tela de comunicados.
 function atualizarProfessor() { carregarPainel(); carregarComunicados(); }
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     try { turmas = await consultarProf('/minhas-turmas'); popularTurmas(); }
-    catch (err) { alert(err.message); }
+    catch (err) { PIDialogo.avisar(err.message); }
     const telaPedida = new URLSearchParams(location.search).get('tela');
     if (['tela-painel', 'tela-comunicados'].includes(telaPedida)) mostrarTela(telaPedida);
     else atualizarProfessor();

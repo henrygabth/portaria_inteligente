@@ -110,7 +110,7 @@
                 if (!r.ok) { erro.textContent = d.erro || 'Não foi possível excluir.'; return; }
                 if (window.PIPush) await PIPush.desativar().catch(() => {});
                 ['token', 'usuario', 'pi-dispositivo'].forEach(k => localStorage.removeItem(k));
-                alert(d.mensagem);
+                await PIDialogo.avisar(d.mensagem);
                 location.href = 'login.html';
             } catch (_) { erro.textContent = 'Erro de conexão com o servidor.'; }
         });

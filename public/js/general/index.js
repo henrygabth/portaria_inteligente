@@ -116,10 +116,10 @@ async function login(event) {
         } else if (response.ok) {
             await concluirEntrada(data);
         } else {
-            alert('Erro no login: ' + (data.erro || 'Credenciais inválidas'));
+            PIDialogo.avisar('Erro no login: ' + (data.erro || 'Credenciais inválidas'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor.');
+        PIDialogo.avisar('Erro de conexão com o servidor.');
     } finally {
         loadingDiv.style.display = 'none';
     }
@@ -250,7 +250,7 @@ async function register(event) {
     const tipo_usuario = document.getElementById('tipo_usuario')?.value;
 
     if (!nome || !cpf || !email || !telefone || senha.length < 6 || !tipo_usuario) {
-        alert('Preencha todos os campos corretamente!');
+        PIDialogo.avisar('Preencha todos os campos corretamente!');
         return;
     }
 
@@ -274,13 +274,13 @@ async function register(event) {
         if (response.ok) {
             if (data.token) localStorage.setItem('token', data.token);
             if (data.usuario) localStorage.setItem('usuario', JSON.stringify(data.usuario));
-            alert('Cadastro efetuado com sucesso!');
+            await PIDialogo.avisar('Cadastro efetuado com sucesso!');
             window.location.href = 'home.html';
         } else {
-            alert('Erro no cadastro: ' + (data.erro || data.detalhes || 'Falha no cadastro'));
+            PIDialogo.avisar('Erro no cadastro: ' + (data.erro || data.detalhes || 'Falha no cadastro'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor');
+        PIDialogo.avisar('Erro de conexão com o servidor');
     } finally {
         loadingDiv.style.display = 'none';
     }
@@ -291,7 +291,7 @@ async function recoverPassword(event) {
 
     const email = document.getElementById('email')?.value?.trim();
     if (!validateEmail(email)) {
-        alert('Digite um e-mail válido.');
+        PIDialogo.avisar('Digite um e-mail válido.');
         return;
     }
 
@@ -309,12 +309,12 @@ async function recoverPassword(event) {
         const data = await response.json();
 
         if (response.ok) {
-            alert(data.mensagem || 'Instruções enviadas para o seu e-mail!');
+            PIDialogo.avisar(data.mensagem || 'Instruções enviadas para o seu e-mail!');
         } else {
-            alert('Erro: ' + (data.erro || 'Falha ao processar solicitação.'));
+            PIDialogo.avisar('Erro: ' + (data.erro || 'Falha ao processar solicitação.'));
         }
     } catch (err) {
-        alert('Erro de conexão com o servidor.');
+        PIDialogo.avisar('Erro de conexão com o servidor.');
     } finally {
         loadingDiv.style.display = 'none';
         if (btn) btn.disabled = false;

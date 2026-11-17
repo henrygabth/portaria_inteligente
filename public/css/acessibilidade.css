@@ -136,3 +136,37 @@ html.a11y-animacoes #particles-js, html.a11y-animacoes canvas.particulas { displ
 /* aviso falado da troca de tela (só para leitores de tela) */
 .a11y-anuncio { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
+
+/* ===== janelas de confirmação e aviso (js/general/dialogo.js) — visual do sistema ===== */
+.pi-dialogo-fundo { position: fixed; inset: 0; z-index: 2147483100; background: rgba(6, 16, 43, .6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pi-dialogo { width: min(440px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; background: #fff; color: #333; border-radius: 8px;
+    padding: 26px 24px 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, .35); text-align: center; outline: none; animation: pi-dialogo-entra .16s ease-out; }
+@keyframes pi-dialogo-entra { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+.pi-dialogo-icone { width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; }
+.pi-dialogo-normal, .pi-dialogo-info { background: #e7efff; color: #0052cc; }
+.pi-dialogo-sucesso { background: #d4edda; color: #28a745; }
+.pi-dialogo-erro, .pi-dialogo-perigo { background: #fdecea; color: #dc3545; }
+.pi-dialogo h2 { margin: 0 0 8px; font-size: 20px; font-weight: 700; color: #0A192F; }
+.pi-dialogo-texto { margin: 0; font-size: 15px; line-height: 1.5; color: #555; }
+.pi-dialogo-rotulo { display: block; margin: 16px 0 6px; text-align: left; font-weight: 600; color: #0A192F; }
+.pi-dialogo-campo { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font: inherit; font-size: 15px; resize: vertical; }
+.pi-dialogo-campo:focus { outline: none; border-color: #0052cc; box-shadow: 0 0 0 3px rgba(0, 82, 204, .15); }
+.pi-dialogo-erro { min-height: 18px; margin: 6px 0 0; text-align: left; font-size: 13px; font-weight: 600; color: #dc3545; }
+.pi-dialogo-botoes { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+.pi-dialogo-btn { flex: 1 1 140px; min-height: 44px; margin: 0; padding: 0 18px; border-radius: 6px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; border: 1px solid transparent; width: auto; }
+.pi-dialogo-principal { background: #0052cc; color: #fff; }
+.pi-dialogo-principal:hover { background: #003d99; }
+.pi-dialogo-sucesso.pi-dialogo-btn { background: #28a745; color: #fff; }
+.pi-dialogo-sucesso.pi-dialogo-btn:hover { background: #218838; }
+.pi-dialogo-perigo.pi-dialogo-btn { background: #dc3545; color: #fff; }
+.pi-dialogo-perigo.pi-dialogo-btn:hover { background: #c82333; }
+.pi-dialogo-secundario { background: #fff; color: #333; border-color: #ccc; }
+.pi-dialogo-secundario:hover { background: #f1f3f6; }
+.pi-dialogo-btn:focus-visible { outline: 3px solid #FFB000; outline-offset: 2px; }
+[data-theme="dark"] .pi-dialogo { background: #141d2f; color: #dbe4f3; }
+[data-theme="dark"] .pi-dialogo h2, [data-theme="dark"] .pi-dialogo-rotulo { color: #f1f5f9; }
+[data-theme="dark"] .pi-dialogo-texto { color: #b4c0d3; }
+[data-theme="dark"] .pi-dialogo-secundario { background: #1b2740; color: #dbe4f3; border-color: #2c3d5e; }
+[data-theme="dark"] .pi-dialogo-campo { background: #0f1727; color: #dbe4f3; border-color: #2a3855; }
+@media (max-width: 480px) { .pi-dialogo-botoes { flex-direction: column-reverse; } .pi-dialogo-btn { flex: 1 1 auto; width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .pi-dialogo { animation: none; } }
