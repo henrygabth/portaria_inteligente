@@ -18,6 +18,10 @@ const conexaoBanco = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    // Bancos na nuvem que exigem conexão criptografada (TiDB Cloud, Aiven etc.): DB_SSL=true
+    ...(String(process.env.DB_SSL || '').toLowerCase() === 'true'
+        ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true } }
+        : {}),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
