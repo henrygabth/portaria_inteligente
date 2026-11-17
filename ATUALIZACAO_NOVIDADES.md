@@ -171,3 +171,29 @@ Criado automaticamente ao iniciar o servidor (utils/migrar.js) ou por `database/
   - Um serviço ligado 24 horas usa cerca de 744 horas por mês, dentro das 750 horas grátis do Render (um serviço por conta).
 - **A portaria também recebe o código por e-mail no login,** como a secretaria e a administração. Dá para mudar os perfis com `DOIS_FATORES_PAPEIS`.
 - **Dependências:** rode `npm audit fix` com internet. Isso atualiza o `package-lock.json` para versões sem as vulnerabilidades conhecidas. Depois rode `npm test` e suba o `package-lock.json` atualizado.
+
+---
+
+## Salas e Turmas (secretaria)
+
+- Tela nova **Salas e Turmas** no menu da secretaria e do admin, entre "Vincular Responsável" e "Gerenciar Alunos".
+- **Cadastrar:** nome da sala/turma e turno (Manhã, Tarde, Noite ou Integral). O sistema não deixa cadastrar duas salas com o mesmo nome, mesmo com diferença de maiúsculas, como "1º A" e "1º a".
+- **Lista:** mostra cada sala com o turno, quantos alunos ativos tem (e os inativos) e quantos professores acompanham. Tem busca e filtro por turno. No celular, cada sala aparece como um cartão.
+- **Editar:** muda o nome e o turno sem sair da lista. Enter salva e Esc cancela.
+- **Remover:** só funciona para sala vazia, sem alunos e sem professores. Se a sala estiver em uso, o sistema explica o que fazer antes: mudar os alunos de turma ou tirar os professores dela.
+- Depois de cadastrar ou alterar, as listas de turma de "Vincular Responsável" e "Gerenciar Alunos" se atualizam sozinhas.
+- Cadastros, alterações e remoções ficam na **auditoria**.
+- **API:** `GET /api/turmas/resumo`, `PUT /api/turmas/:id`, `DELETE /api/turmas/:id`, somente para Secretaria e Admin.
+
+## Logins da equipe (Gerenciar Perfis)
+
+- Botão **Novo login da equipe** na tela "Gerenciar Perfis". Basta nome, e-mail e perfil; CPF e telefone são opcionais.
+- **Quem cria o quê:** o admin cria Secretaria, Portaria e Professor. A secretaria cria só Portaria e Professor.
+- O sistema gera uma **senha temporária**, manda o convite por e-mail (com o link do site) e também mostra a senha na tela, com botão **Copiar**, caso o e-mail vá para o spam.
+- No primeiro login a pessoa recebe o código por e-mail, cria a própria senha e aceita a política de privacidade.
+- Quem ainda não entrou aparece com a etiqueta **Aguardando 1º acesso**.
+- Botão **Reenviar convite** nas linhas da equipe: gera uma nova senha temporária, invalida a anterior e encerra as sessões abertas dessa pessoa.
+- A secretaria agora também vê e pode desativar/reativar professores.
+- Tudo fica na **auditoria** ("Usuário cadastrado" e "Nova senha temporária enviada").
+- **API:** `POST /api/usuarios/equipe` e `POST /api/usuarios/:id/convite`, somente para Secretaria e Admin.
+- Não precisa mudar nada no `.env`. O link do convite usa o `BASE_URL` que já está configurado no Render.

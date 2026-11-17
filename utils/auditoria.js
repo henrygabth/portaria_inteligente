@@ -3,13 +3,14 @@
 const ROTULOS = {
     LOGIN: 'Entrou no sistema', LOGIN_FALHOU: 'Tentativa de login recusada', LOGIN_2FA_ENVIADO: 'Código de acesso enviado',
     LOGIN_2FA_FALHOU: 'Código de acesso incorreto', SENHA_TROCADA: 'Senha alterada', SENHA_REDEFINIDA: 'Senha redefinida pelo link',
-    CONTA_ATUALIZADA: 'Dados da conta alterados', USUARIO_CRIADO: 'Usuário cadastrado', RESPONSAVEL_VINCULADO: 'Responsável vinculado a aluno',
+    CONTA_ATUALIZADA: 'Dados da conta alterados', USUARIO_CRIADO: 'Usuário cadastrado', CONVITE_REENVIADO: 'Nova senha temporária enviada', RESPONSAVEL_VINCULADO: 'Responsável vinculado a aluno',
     PERFIL_ATIVADO: 'Perfil reativado', PERFIL_DESATIVADO: 'Perfil desativado',
     PEDIDO_APROVADO: 'Saída aprovada', PEDIDO_RECUSADO: 'Saída recusada', PEDIDO_CANCELADO: 'Saída cancelada',
     SAIDA_REGISTRADA: 'Saída registrada na portaria', RETORNO_REGISTRADO: 'Retorno registrado na portaria',
     IDENTIFICACAO_NAO_CONFERE: 'Portaria: aluno não confere com a foto',
     ALUNO_CRIADO: 'Aluno cadastrado', ALUNO_ALTERADO: 'Aluno alterado', ALUNO_APAGADO: 'Aluno apagado', FOTO_ALUNO: 'Foto do aluno enviada',
     ALUNOS_IMPORTADOS: 'Alunos importados por planilha',
+    TURMA_CRIADA: 'Turma cadastrada', TURMA_ALTERADA: 'Turma alterada', TURMA_APAGADA: 'Turma removida',
     BACKUP_BAIXADO: 'Backup do banco baixado', BACKUP_GERADO: 'Backup automático gerado',
     TERMOS_ACEITOS: 'Termo e política de privacidade aceitos', DADOS_EXPORTADOS: 'Titular baixou os próprios dados', CONTA_EXCLUIDA: 'Conta excluída a pedido do titular'
 };

@@ -37,6 +37,9 @@ rotas.post('/verificar-email', auth, exigirPapel('SECRETARIA', 'ADMIN'), usuario
 
 // Gerenciar perfis: listar e ativar/desativar (secretaria/admin)
 rotas.get('/perfis', auth, exigirPapel('SECRETARIA', 'ADMIN'), usuariosController.listarPerfis);
+// Logins da equipe (secretaria, portaria, professor): criar e reenviar convite com senha temporária.
+rotas.post('/equipe', auth, exigirPapel('SECRETARIA', 'ADMIN'), limitar({ nome: 'criar-equipe', max: 30, janelaMs: QUINZE_MIN }), usuariosController.criarEquipe);
+rotas.post('/:id/convite', auth, exigirPapel('SECRETARIA', 'ADMIN'), limitar({ nome: 'reenviar-convite', max: 20, janelaMs: QUINZE_MIN }), usuariosController.reenviarConvite);
 rotas.put('/:id/status', auth, exigirPapel('SECRETARIA', 'ADMIN'), usuariosController.alterarStatus);
 
 // Uso interno (secretaria/admin) para localizar um usuário já cadastrado —

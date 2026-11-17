@@ -79,5 +79,5 @@ test('SECRETARIA e ADMIN cadastram/vinculam professores; perfis genéricos conti
     assert.match(rotas, /rotas\.put\('\/:id\/turmas', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
     assert.match(rotas, /rotas\.get\('\/', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
     assert.match(usuarios, /:\s*\['PAI', 'PORTARIA'\]/);
-    assert.match(usuarios, /const secretariaPodeGerir = \['PAI', 'PORTARIA', 'PORTEIRO'\]/);
+    assert.match(usuarios, /const secretariaPodeGerir = \['PAI', 'PORTARIA', 'PORTEIRO', 'PROFESSOR'\]/);
 });

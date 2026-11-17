@@ -183,3 +183,66 @@
 [data-theme="dark"] .auditoria-filtros label { color: #dbe4f3; }
 [data-theme="dark"] .erro-texto { color: #FF8A80; }
 [data-theme="dark"] .link-botao { color: #8AB4FF; }
+
+/* ---------- salas e turmas ---------- */
+.turmas-subtitulo { margin: 0 0 6px; font-size: 18px; color: var(--dark-blue, #0A192F); }
+.turmas-form { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) auto; gap: 12px 16px; align-items: end; }
+.turmas-form .input-group { margin: 0; }
+.turmas-form-botao .btn-submit { width: auto; margin: 0; padding-left: 22px; padding-right: 22px; white-space: nowrap; }
+.turmas-msg { min-height: 20px; margin: 10px 0 0; font-weight: 600; }
+.turmas-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.turmas-topo .turmas-subtitulo { margin: 0; }
+.turmas-total { color: #5B6676; font-weight: 400; font-size: 15px; }
+.turmas-filtros { margin: 0; display: flex; gap: 10px; flex-wrap: wrap; }
+.turmas-filtros .filter-select { width: auto; min-width: 180px; margin: 0; }
+.turmas-tabela { width: 100%; }
+.turma-acoes { white-space: nowrap; text-align: right; }
+.turma-acoes .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; min-height: 0; margin: 0; padding: 0; border: 0; border-radius: 6px; font-size: 15px; cursor: pointer; }
+.turma-acoes .btn-action + .btn-action { margin-left: 6px; }
+.turma-acoes .btn-accept { background: #28a745; color: #fff; }
+.turma-acoes .btn-accept:hover { background: #218838; }
+.turma-acoes .btn-deny { background: #dc3545; color: #fff; }
+.turma-acoes .btn-deny:hover { background: #c82333; }
+.turma-btn-editar { background: var(--primary-blue, #0052cc); color: #fff; }
+.turma-btn-editar:hover { background: #003d99; }
+.turma-acoes [aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.turma-editando td { background: #f4f8ff; }
+.turma-edit-nome, .turma-edit-turno { width: 100%; box-sizing: border-box; min-height: 38px; padding: 6px 10px; border: 1px solid #0052cc; border-radius: 6px; font: inherit; }
+@media (max-width: 640px) {
+    .turmas-form { grid-template-columns: 1fr; }
+    .turmas-form-botao .btn-submit { width: 100%; }
+    .turmas-filtros, .turmas-filtros .filter-select { width: 100%; }
+    /* no celular cada sala vira um cartão (sem rolar a tabela para o lado) */
+    .turmas-tabela { min-width: 0 !important; }
+    .turmas-tabela thead { display: none; }
+    .turmas-tabela, .turmas-tabela tbody, .turmas-tabela tr, .turmas-tabela td { display: block; width: 100%; box-sizing: border-box; }
+    .turmas-tabela tr { border: 1px solid #e3e8ef; border-radius: 8px; margin-bottom: 10px; padding: 6px 4px; }
+    .turmas-tabela td { border: 0 !important; padding: 6px 10px !important; display: flex; justify-content: space-between; gap: 10px; }
+    .turmas-tabela td[data-label]::before { content: attr(data-label); font-weight: 600; color: #5B6676; }
+    .turmas-tabela td[colspan] { display: block; }
+    .turma-acoes { justify-content: flex-end !important; }
+    .turma-editando td { flex-direction: column; }
+}
+[data-theme="dark"] .turmas-tabela tr { border-color: #22304b; }
+[data-theme="dark"] .turmas-subtitulo { color: #f1f5f9; }
+[data-theme="dark"] .turmas-total { color: #afc0da; }
+[data-theme="dark"] .turma-editando td { background: #1b2740; }
+[data-theme="dark"] .turma-edit-nome, [data-theme="dark"] .turma-edit-turno { background: #0f1727; color: #dbe4f3; border-color: #4b6287; }
+.turma-inativos { color: #5B6676; font-size: 12px; }
+[data-theme="dark"] .turma-inativos { color: #afc0da; }
+
+/* ---------- logins da equipe ---------- */
+.perfil-aguardando { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: #fff4e5; color: #7a4100; font-size: 11.5px; font-weight: 700; vertical-align: middle; }
+.perfil-acoes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.equipe-form .input-group { margin: 0 0 12px; }
+.equipe-form .input-group input, .equipe-form .input-group select { width: 100%; box-sizing: border-box; }
+.equipe-opcionais { margin: 4px 0 12px; }
+.equipe-opcionais summary { cursor: pointer; font-weight: 600; color: var(--primary-blue, #0052cc); margin-bottom: 10px; }
+.equipe-senha { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0; padding: 14px 16px; border-radius: 8px; background: #f0f5ff; border: 1px dashed #0052cc; }
+.equipe-senha span { font-weight: 600; color: #36404f; }
+.equipe-senha code { font-size: 22px; font-weight: 700; letter-spacing: 2px; color: #0A192F; flex: 1; }
+[data-theme="dark"] .perfil-aguardando { background: #3a2a12; color: #ffd8a8; }
+[data-theme="dark"] .equipe-senha { background: #1b2740; border-color: #4b6287; }
+[data-theme="dark"] .equipe-senha span { color: #afc0da; }
+[data-theme="dark"] .equipe-senha code { color: #f1f5f9; }
+[data-theme="dark"] .equipe-opcionais summary { color: #8ab4ff; }

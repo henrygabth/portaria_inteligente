@@ -53,6 +53,46 @@ function enviarEmSegundoPlano(opcoes, contexto) {
     enviarEmail(opcoes).catch(err => console.error(`[email] Falha ao enviar ${contexto}:`, err.message));
 }
 
+// ------------------------------------------------------------------ logins da equipe
+// Quem pode criar (e reenviar convite para) qual perfil da equipe da escola.
+// Só o ADMIN cria SECRETARIA: ela tem acesso aos dados de todos os alunos.
+const EQUIPE_POR_PAPEL = {
+    ADMIN: ['SECRETARIA', 'PORTARIA', 'PROFESSOR'],
+    SECRETARIA: ['PORTARIA', 'PROFESSOR']
+};
+const ROTULO_PERFIL = { SECRETARIA: 'Secretaria', PORTARIA: 'Portaria', PORTEIRO: 'Portaria', PROFESSOR: 'Professor(a)' };
+const podeGerirEquipe = (papelLogado, papelAlvo) =>
+    (EQUIPE_POR_PAPEL[String(papelLogado).toUpperCase()] || []).includes(papelAlvo === 'PORTEIRO' ? 'PORTARIA' : papelAlvo);
+
+// E-mail de convite com a senha temporária. Devolve true se o envio funcionou.
+async function enviarConvite({ nome, email, tipo, senha, quem, reenvio }) {
+    const base = (process.env.BASE_URL || '').replace(/\/+$/, '');
+    try {
+        await enviarEmail({
+            to: email,
+            subject: reenvio ? 'Nova senha temporária - Portaria Inteligente' : 'Seu acesso ao Portaria Inteligente foi criado',
+            text: `Olá ${nome}. ${reenvio ? 'Foi gerada uma nova senha temporária para o seu acesso' : `Foi criado um acesso para você (${ROTULO_PERFIL[tipo] || tipo})`}. E-mail: ${email} | Senha temporária: ${senha}${base ? ` | Entre em: ${base}` : ''}. No primeiro acesso você vai criar a sua própria senha.`,
+            html: montarEmailHtml({
+                titulo: reenvio ? 'Nova senha temporária' : 'Seu acesso foi criado',
+                saudacao: `Olá, <strong>${escaparHtml(nome)}</strong>.`,
+                paragrafos: [reenvio
+                    ? 'Foi gerada uma nova senha temporária para você entrar no Portaria Inteligente. A senha anterior não vale mais.'
+                    : `${escaparHtml(quem || 'A escola')} criou o seu acesso ao Portaria Inteligente com o perfil <strong>${escaparHtml(ROTULO_PERFIL[tipo] || tipo)}</strong>.`],
+                destaque: `
+                    <p style="margin: 0 0 6px 0; color: #2d3748; font-size: 13px;"><strong>E-mail de acesso:</strong> ${escaparHtml(email)}</p>
+                    <p style="margin: 0; color: #2d3748; font-size: 13px;"><strong>Senha temporária:</strong> <span style="font-family: monospace; font-weight: bold; background-color: #e2e8f0; padding: 2px 6px; border-radius: 3px;">${escaparHtml(senha)}</span></p>
+                    ${base ? `<p style="margin: 10px 0 0 0; font-size: 13px;"><a href="${escaparHtml(base)}" style="color: #0052cc; font-weight: bold;">Abrir o Portaria Inteligente</a></p>` : ''}`,
+                rodape: 'No primeiro acesso você vai receber um código de 6 números neste e-mail, criar a sua própria senha e aceitar a política de privacidade. Se não esperava este e-mail, ignore-o.'
+            }),
+            tag: 'convite-equipe', tentativas: 2
+        });
+        return true;
+    } catch (err) {
+        console.error('[equipe] Falha ao enviar convite:', err.message);
+        return false;
+    }
+}
+
 // ------------------------------------------------------------------ login em duas etapas
 // Secretaria, administração e portaria mexem com dados de todos os alunos: além da senha, recebem um
 // código de 6 números por e-mail. DOIS_FATORES=desligado no .env desativa (ex.: em testes).
@@ -559,18 +599,91 @@ const usuariosController = {
         }
     },
 
+    // ADMIN/SECRETARIA: cria o login de alguém da equipe (secretaria, portaria ou professor).
+    // O sistema gera a senha temporária e manda o convite por e-mail; no 1º acesso a pessoa
+    // confirma o código do e-mail, cria a própria senha e aceita a política de privacidade.
+    criarEquipe: async (req, res) => {
+        try {
+            const nome = String(req.body?.nome ?? '').replace(/\s+/g, ' ').trim();
+            const email = String(req.body?.email ?? '').trim().toLowerCase();
+            const tipo = String(req.body?.tipo_usuario ?? '').trim().toUpperCase();
+            const cpfInformado = String(req.body?.cpf ?? '').replace(/\D/g, '');
+            const telefoneInformado = String(req.body?.telefone ?? '').replace(/\D/g, '');
+
+            if (nome.length < 3 || nome.length > 150 || /[<>{}]/.test(nome)) return res.status(400).json({ erro: 'Informe o nome completo (3 a 150 caracteres).' });
+            if (!emailValido(email)) return res.status(400).json({ erro: 'E-mail inválido.' });
+            if (!['SECRETARIA', 'PORTARIA', 'PROFESSOR'].includes(tipo)) return res.status(400).json({ erro: 'Escolha o perfil: Secretaria, Portaria ou Professor.' });
+            if (!podeGerirEquipe(req.usuario.tipo_usuario, tipo)) {
+                return res.status(403).json({ erro: tipo === 'SECRETARIA' ? 'Somente o administrador pode criar logins da secretaria.' : 'Você não tem permissão para criar este perfil.' });
+            }
+            if (cpfInformado && cpfInformado.length !== 11) return res.status(400).json({ erro: 'CPF deve ter 11 números (ou deixe em branco).' });
+            if (telefoneInformado && (telefoneInformado.length < 10 || telefoneInformado.length > 11)) return res.status(400).json({ erro: 'Telefone inválido (DDD + número) ou deixe em branco.' });
+
+            if (await usuariosModel.buscarPorEmail(email)) return res.status(409).json({ erro: 'Já existe uma conta com este e-mail.' });
+            const checagemEmail = await verificarEmail(email);
+            if (!checagemEmail.valido) return res.status(400).json({ erro: checagemEmail.motivo, sugestao: checagemEmail.sugestao });
+
+            const senhaTemporaria = gerarSenhaAleatoria();
+            // CPF é obrigatório e único no banco; para a equipe é opcional, então usa um identificador provisório.
+            const cpf = cpfInformado ? formatarCPF(cpfInformado) : `PROV-${crypto.randomBytes(5).toString('hex')}`;
+            const id = await usuariosModel.cadastrarEquipe(nome, cpf, email,
+                telefoneInformado ? formatarTelefone(telefoneInformado) : null, await bcrypt.hash(senhaTemporaria, 10), tipo);
+
+            auditar(req, 'USUARIO_CRIADO', { alvo_tipo: 'USUARIO', alvo_id: id, descricao: `Criou o login de ${nome} (${ROTULO_PERFIL[tipo]}) e enviou o convite para ${email}` });
+            const emailEnviado = await enviarConvite({ nome, email, tipo, senha: senhaTemporaria, quem: req.usuario.nome });
+            return res.status(201).json({
+                id_usuario: id, nome, email, tipo_usuario: tipo,
+                senha_temporaria: senhaTemporaria,
+                email_enviado: emailEnviado,
+                mensagem: emailEnviado ? `Login criado. O convite foi enviado para ${email}.` : 'Login criado, mas o e-mail não foi enviado. Passe a senha temporária para a pessoa.'
+            });
+        } catch (error) {
+            if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ erro: 'CPF ou e-mail já cadastrado.' });
+            console.error('Erro ao criar login da equipe:', error);
+            return res.status(500).json({ erro: 'Erro ao criar o login.' });
+        }
+    },
+
+    // ADMIN/SECRETARIA: "Reenviar convite" — gera nova senha temporária e manda por e-mail.
+    reenviarConvite: async (req, res) => {
+        try {
+            const id = Number(req.params.id);
+            if (id === req.usuario.id_usuario) return res.status(400).json({ erro: 'Para a sua própria conta, use "Minha Conta" ou "Esqueci minha senha".' });
+            const alvo = await usuariosModel.buscarPorId(id);
+            if (!alvo) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+            const papelAlvo = String(alvo.tipo_usuario || '').toUpperCase();
+            if (!podeGerirEquipe(req.usuario.tipo_usuario, papelAlvo)) return res.status(403).json({ erro: 'Você não tem permissão para gerar senha para este perfil.' });
+            if (!usuariosModel.estaAtivo(alvo)) return res.status(409).json({ erro: 'Este perfil está desativado. Reative antes de reenviar o convite.' });
+
+            const senhaTemporaria = gerarSenhaAleatoria();
+            await usuariosModel.definirSenhaTemporaria(id, await bcrypt.hash(senhaTemporaria, 10));
+            doisFatores.esquecerAparelhos(id).catch(() => {});
+            auditar(req, 'CONVITE_REENVIADO', { alvo_tipo: 'USUARIO', alvo_id: id, descricao: `Gerou nova senha temporária para ${alvo.nome} (${ROTULO_PERFIL[papelAlvo] || papelAlvo})` });
+            const emailEnviado = await enviarConvite({ nome: alvo.nome, email: alvo.email, tipo: papelAlvo, senha: senhaTemporaria, reenvio: true });
+            return res.json({
+                senha_temporaria: senhaTemporaria, email_enviado: emailEnviado, nome: alvo.nome, email: alvo.email,
+                mensagem: emailEnviado ? `Nova senha temporária enviada para ${alvo.email}.` : 'Nova senha gerada, mas o e-mail não foi enviado. Passe a senha temporária para a pessoa.'
+            });
+        } catch (error) {
+            console.error('Erro ao reenviar convite:', error);
+            return res.status(500).json({ erro: 'Erro ao gerar a nova senha.' });
+        }
+    },
+
     // SECRETARIA/ADMIN: lista os perfis que podem ser ativados/desativados.
     listarPerfis: async (req, res) => {
         try {
             const papelLogado = (req.usuario.tipo_usuario || '').toUpperCase();
             const tipos = papelLogado === 'ADMIN'
                 ? ['PAI', 'PORTARIA', 'PORTEIRO', 'SECRETARIA', 'PROFESSOR']
-                : ['PAI', 'PORTARIA', 'PORTEIRO'];
+                : ['PAI', 'PORTARIA', 'PORTEIRO', 'PROFESSOR'];
             const perfis = await usuariosModel.listarPerfis(tipos);
             return res.json(perfis.map(p => ({
                 ...p,
                 ativo: usuariosModel.estaAtivo(p),
-                eu: p.id_usuario === req.usuario.id_usuario
+                eu: p.id_usuario === req.usuario.id_usuario,
+                aguardando_primeiro_acesso: Number(p.primeiro_acesso) === 1,
+                pode_reenviar: p.id_usuario !== req.usuario.id_usuario && podeGerirEquipe(papelLogado, String(p.tipo_usuario).toUpperCase())
             })));
         } catch (error) {
             console.error('Erro ao listar perfis:', error);
@@ -597,7 +710,7 @@ const usuariosController = {
 
             const papelAlvo = (alvo.tipo_usuario || '').toUpperCase();
             const papelLogado = (req.usuario.tipo_usuario || '').toUpperCase();
-            const secretariaPodeGerir = ['PAI', 'PORTARIA', 'PORTEIRO'];
+            const secretariaPodeGerir = ['PAI', 'PORTARIA', 'PORTEIRO', 'PROFESSOR'];
             if (papelLogado !== 'ADMIN' && !secretariaPodeGerir.includes(papelAlvo)) {
                 return res.status(403).json({ erro: 'Você não tem permissão para alterar este tipo de perfil.' });
             }

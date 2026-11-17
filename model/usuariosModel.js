@@ -58,6 +58,24 @@ const usuariosModel = {
     // Troca de senha "de verdade" (Minha Conta / link de redefinição): além de gravar o hash,
     // aumenta token_versao, o que derruba todas as sessões abertas e invalida links de
     // redefinição já usados.
+    // Conta da equipe criada pela tela "Gerenciar Perfis": nasce com troca de senha obrigatória.
+    cadastrarEquipe: async (nome, cpf, email, telefone, senhaHash, tipo_usuario) => {
+        const [result] = await db.query(
+            `INSERT INTO usuarios (nome, cpf, email, telefone, senha, tipo_usuario, status, primeiro_acesso)
+             VALUES (?, ?, ?, ?, ?, ?, '1', 1)`,
+            [nome, cpf, email, telefone, senhaHash, tipo_usuario]
+        );
+        return result.insertId;
+    },
+
+    // "Reenviar convite": nova senha temporária, volta a exigir a troca e derruba sessões abertas.
+    definirSenhaTemporaria: async (id, senhaHash) => {
+        await db.query(
+            'UPDATE usuarios SET senha = ?, primeiro_acesso = 1, token_versao = COALESCE(token_versao, 0) + 1 WHERE id_usuario = ?',
+            [senhaHash, id]
+        );
+    },
+
     trocarSenha: async (id, senhaHash) => {
         await db.query(
             'UPDATE usuarios SET senha = ?, primeiro_acesso = 0, token_versao = COALESCE(token_versao, 0) + 1 WHERE id_usuario = ?',
@@ -94,7 +112,7 @@ const usuariosModel = {
     listarPerfis: async (tipos) => {
         const placeholders = tipos.map(() => '?').join(',');
         const [rows] = await db.query(
-            `SELECT u.id_usuario, u.nome, u.email, u.telefone, u.tipo_usuario, u.status,
+            `SELECT u.id_usuario, u.nome, u.email, u.telefone, u.tipo_usuario, u.status, u.primeiro_acesso,
                     (SELECT GROUP_CONCAT(a.nome SEPARATOR ', ')
                        FROM responsaveis_alunos ra JOIN alunos a ON a.aluno_id = ra.aluno_id
                       WHERE ra.usuario_id = u.id_usuario) AS alunos

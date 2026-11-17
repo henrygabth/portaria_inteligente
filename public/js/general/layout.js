@@ -16,6 +16,7 @@
         ['fa-comments', 'Mensagens', 'secretaria.html', 'tela-mensagens'],
         ['fa-headset', 'Chat com a Portaria', 'secretaria.html', 'tela-equipe'],
         ['fa-user-plus', 'Vincular Responsável', 'secretaria.html', 'tela-vincular'],
+        ['fa-door-open', 'Salas e Turmas', 'secretaria.html', 'tela-turmas'],
         ['fa-user-graduate', 'Gerenciar Alunos', 'secretaria.html', 'tela-alunos'],
         ['fa-users-gear', 'Gerenciar Perfis', 'secretaria.html', 'tela-perfis'],
         ['fa-chalkboard-user', 'Professores e Turmas', 'professores-admin.html', null],

@@ -212,14 +212,240 @@
         botao.textContent = final ? 'Concluído' : `Importar ${novos} aluno(s)`;
     }
 
+    // ================================================================ SALAS E TURMAS
+    const TURNOS = ['Manhã', 'Tarde', 'Noite', 'Integral'];
+    let turmasLista = [];
+    let editandoTurma = null;
+
+    function avisoTurma(texto, erro) {
+        const el = $('turmaMsg');
+        if (!el) return;
+        el.textContent = texto || '';
+        el.className = 'turmas-msg' + (texto ? (erro ? ' erro-texto' : ' ok-texto') : '');
+    }
+    // Atualiza as listas de turma das outras telas (Vincular Responsável e Gerenciar Alunos).
+    function atualizarOutrasTelas() {
+        if (typeof window.carregarTurmasVinculo === 'function') window.carregarTurmasVinculo();
+        if (typeof window.carregarGerenciarAlunos === 'function' && document.getElementById('tela-alunos')?.style.display !== 'none') window.carregarGerenciarAlunos();
+    }
+
+    function desenharTurmas() {
+        const corpo = $('turmasCorpo');
+        if (!corpo) return;
+        const busca = ($('turmasBusca').value || '').trim().toLowerCase();
+        const turno = $('turmasFiltroTurno').value;
+        const lista = turmasLista.filter(t => (!busca || t.sala_turma.toLowerCase().includes(busca)) && (!turno || t.turno === turno));
+        $('turmasTotal').textContent = turmasLista.length ? `(${turmasLista.length})` : '';
+        if (!turmasLista.length) { corpo.innerHTML = '<tr><td colspan="5">Nenhuma sala cadastrada ainda. Use o formulário acima.</td></tr>'; return; }
+        if (!lista.length) { corpo.innerHTML = '<tr><td colspan="5">Nenhuma sala encontrada com esse filtro.</td></tr>'; return; }
+        corpo.innerHTML = lista.map(t => {
+            if (editandoTurma === t.id_turma) {
+                return `<tr class="turma-editando" data-id="${t.id_turma}">
+                    <td data-label="Sala/Turma"><input type="text" class="turma-edit-nome" maxlength="100" value="${esc(t.sala_turma)}" aria-label="Novo nome da turma ${esc(t.sala_turma)}"></td>
+                    <td data-label="Turno"><select class="turma-edit-turno" aria-label="Turno da turma ${esc(t.sala_turma)}">${TURNOS.map(x => `<option${x === t.turno ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
+                    <td data-label="Alunos ativos">${t.alunos_ativos}</td>
+                    <td data-label="Professores">${t.professores}</td>
+                    <td class="turma-acoes"><button type="button" class="btn-action btn-accept" data-turma-salvar title="Salvar" aria-label="Salvar alterações da turma"><i class="fas fa-check"></i></button>
+                        <button type="button" class="btn-action btn-deny" data-turma-cancelar title="Cancelar" aria-label="Cancelar edição"><i class="fas fa-xmark"></i></button></td>
+                </tr>`;
+            }
+            const vazia = !t.alunos_total && !t.professores;
+            return `<tr data-id="${t.id_turma}">
+                <td data-label="Sala/Turma"><strong>${esc(t.sala_turma)}</strong></td>
+                <td data-label="Turno">${esc(t.turno)}</td>
+                <td data-label="Alunos ativos"><span>${t.alunos_ativos}${t.alunos_total > t.alunos_ativos ? ` <small class="turma-inativos">(+${t.alunos_total - t.alunos_ativos} inativo(s))</small>` : ''}</span></td>
+                <td data-label="Professores">${t.professores}</td>
+                <td class="turma-acoes">
+                    <button type="button" class="btn-action turma-btn-editar" data-turma-editar title="Editar" aria-label="Editar a turma ${esc(t.sala_turma)}"><i class="fas fa-pen"></i></button>
+                    <button type="button" class="btn-action btn-deny" data-turma-apagar title="${vazia ? 'Remover' : 'Só dá para remover turma sem alunos e sem professores'}" aria-label="Remover a turma ${esc(t.sala_turma)}"${vazia ? '' : ' aria-disabled="true"'}><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+        const campo = corpo.querySelector('.turma-edit-nome');
+        if (campo) { campo.focus(); campo.select(); }
+    }
+
+    async function carregarTurmas() {
+        const corpo = $('turmasCorpo');
+        if (!corpo) return;
+        try {
+            const r = await api('/turmas/resumo');
+            turmasLista = r.turmas;
+            desenharTurmas();
+        } catch (err) {
+            corpo.innerHTML = `<tr><td colspan="5" class="erro-texto">${esc(err.message)}</td></tr>`;
+        }
+    }
+
+    function ligarTurmas() {
+        const form = $('formTurma');
+        if (!form) return;
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const nome = $('turmaNome').value.trim();
+            if (!nome) { avisoTurma('Informe o nome da sala/turma.', true); $('turmaNome').focus(); return; }
+            const botao = form.querySelector('button[type=submit]'); botao.disabled = true;
+            try {
+                const r = await api('/turmas/cadastrar', { method: 'POST', body: JSON.stringify({ sala_turma: nome, turno: $('turmaTurno').value }) });
+                avisoTurma(r.mensagem);
+                $('turmaNome').value = ''; $('turmaNome').focus();
+                await carregarTurmas(); atualizarOutrasTelas();
+            } catch (err) { avisoTurma(err.message, true); }
+            botao.disabled = false;
+        });
+        $('turmasBusca').addEventListener('input', desenharTurmas);
+        $('turmasFiltroTurno').addEventListener('change', desenharTurmas);
+        $('turmasCorpo').addEventListener('keydown', e => {
+            if (!e.target.closest('.turma-editando')) return;
+            if (e.key === 'Enter') { e.preventDefault(); e.target.closest('tr').querySelector('[data-turma-salvar]').click(); }
+            if (e.key === 'Escape') { e.preventDefault(); editandoTurma = null; desenharTurmas(); }
+        });
+        $('turmasCorpo').addEventListener('click', async e => {
+            const tr = e.target.closest('tr[data-id]');
+            if (!tr) return;
+            const id = Number(tr.dataset.id);
+            const turma = turmasLista.find(t => t.id_turma === id);
+            if (e.target.closest('[data-turma-editar]')) { editandoTurma = id; desenharTurmas(); return; }
+            if (e.target.closest('[data-turma-cancelar]')) { editandoTurma = null; desenharTurmas(); return; }
+            if (e.target.closest('[data-turma-salvar]')) {
+                const sala_turma = tr.querySelector('.turma-edit-nome').value.trim();
+                const turno = tr.querySelector('.turma-edit-turno').value;
+                try {
+                    const r = await api(`/turmas/${id}`, { method: 'PUT', body: JSON.stringify({ sala_turma, turno }) });
+                    editandoTurma = null; avisoTurma(r.mensagem);
+                    await carregarTurmas(); atualizarOutrasTelas();
+                } catch (err) { PIDialogo.avisar(err.message, { tipo: 'erro' }); }
+                return;
+            }
+            if (e.target.closest('[data-turma-apagar]')) {
+                if (turma && (turma.alunos_total || turma.professores)) {
+                    PIDialogo.avisar(`A turma ${turma.sala_turma} ainda tem ${turma.alunos_total} aluno(s) e ${turma.professores} professor(es). Mude os alunos de turma em "Gerenciar Alunos" e tire os professores em "Professores e Turmas" antes de remover.`, { tipo: 'info', titulo: 'Turma em uso' });
+                    return;
+                }
+                const ok = await PIDialogo.confirmar({ titulo: 'Remover turma?', texto: `A turma ${turma ? turma.sala_turma : ''} será removida.`, ok: 'Remover', tipo: 'perigo' });
+                if (!ok) return;
+                try {
+                    const r = await api(`/turmas/${id}`, { method: 'DELETE' });
+                    avisoTurma(r.mensagem);
+                    await carregarTurmas(); atualizarOutrasTelas();
+                } catch (err) { PIDialogo.avisar(err.message, { tipo: 'erro' }); }
+            }
+        });
+    }
+
+    // ================================================================ LOGINS DA EQUIPE
+    const ROTULO_PERFIL = { SECRETARIA: 'Secretaria', PORTARIA: 'Portaria', PORTEIRO: 'Portaria', PROFESSOR: 'Professor(a)' };
+    const perfisQuePossoCriar = () => ehAdmin() ? ['SECRETARIA', 'PORTARIA', 'PROFESSOR'] : ['PORTARIA', 'PROFESSOR'];
+
+    function abrirModal(html, idTitulo) {
+        const fundo = document.createElement('div');
+        fundo.className = 'modal-recurso';
+        fundo.innerHTML = `<div class="modal-recurso-caixa" role="dialog" aria-modal="true" aria-labelledby="${idTitulo}">
+            <button type="button" class="modal-recurso-fechar" aria-label="Fechar">&times;</button>${html}</div>`;
+        document.body.appendChild(fundo);
+        const anterior = document.activeElement;
+        const fechar = () => { fundo.remove(); document.removeEventListener('keydown', tecla); if (anterior && anterior.focus) anterior.focus(); };
+        const tecla = e => { if (e.key === 'Escape') fechar(); };
+        document.addEventListener('keydown', tecla);
+        fundo.addEventListener('click', e => { if (e.target === fundo || e.target.closest('.modal-recurso-fechar') || e.target.closest('[data-fechar]')) fechar(); });
+        return { fundo, fechar };
+    }
+
+    // Mostra a senha temporária (com botão de copiar) e se o convite foi por e-mail.
+    function mostrarSenhaTemporaria(r, titulo) {
+        const { fundo } = abrirModal(`
+            <h2 id="eqResTitulo"><i class="fas ${r.email_enviado ? 'fa-circle-check' : 'fa-triangle-exclamation'}" aria-hidden="true"></i> ${esc(titulo)}</h2>
+            <p class="tela-intro">${r.email_enviado
+                ? `O convite foi enviado para <strong>${esc(r.email)}</strong>. Se não chegar em alguns minutos, peça para olhar no spam/lixo eletrônico.`
+                : `<strong>O e-mail não foi enviado.</strong> Passe a senha abaixo para <strong>${esc(r.nome)}</strong> pessoalmente.`}</p>
+            <div class="equipe-senha">
+                <span>Senha temporária</span>
+                <code id="eqSenha">${esc(r.senha_temporaria)}</code>
+                <button type="button" class="btn-filtro secundario" id="eqCopiar"><i class="fas fa-copy" aria-hidden="true"></i> Copiar</button>
+            </div>
+            <p class="tela-intro">No primeiro login, a pessoa recebe um código no e-mail, cria a própria senha e aceita a política de privacidade. Esta senha temporária deixa de valer depois disso.</p>
+            <div class="importar-botoes"><button type="button" class="btn-importar" data-fechar>Pronto</button></div>`, 'eqResTitulo');
+        fundo.querySelector('#eqCopiar').addEventListener('click', async e => {
+            try { await navigator.clipboard.writeText(r.senha_temporaria); e.currentTarget.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Copiada'; }
+            catch (_) { const sel = window.getSelection(); const rg = document.createRange(); rg.selectNodeContents(fundo.querySelector('#eqSenha')); sel.removeAllRanges(); sel.addRange(rg); }
+        });
+        fundo.querySelector('[data-fechar]').focus();
+    }
+
+    function abrirNovoLogin() {
+        const perfis = perfisQuePossoCriar();
+        const { fundo, fechar } = abrirModal(`
+            <h2 id="eqTitulo"><i class="fas fa-user-plus" aria-hidden="true"></i> Novo login da equipe</h2>
+            <p class="tela-intro">O sistema cria uma senha temporária e manda um convite por e-mail. Responsáveis (pais) são criados em "Vincular Responsável", junto com o aluno.</p>
+            <form id="eqForm" class="equipe-form" novalidate>
+                <div class="input-group"><label for="eqNome">Nome completo</label><input id="eqNome" maxlength="150" autocomplete="off" required></div>
+                <div class="input-group"><label for="eqEmail">E-mail</label><input id="eqEmail" type="email" maxlength="150" autocomplete="off" required placeholder="nome@escola.com.br"></div>
+                <div class="input-group"><label for="eqPerfil">Perfil</label>
+                    <select id="eqPerfil">${perfis.map(p => `<option value="${p}">${ROTULO_PERFIL[p]}</option>`).join('')}</select></div>
+                <details class="equipe-opcionais"><summary>CPF e telefone (opcionais)</summary>
+                    <div class="input-group"><label for="eqCpf">CPF</label><input id="eqCpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00"></div>
+                    <div class="input-group"><label for="eqTel">Telefone</label><input id="eqTel" inputmode="tel" maxlength="15" placeholder="(19) 99999-9999"></div>
+                </details>
+                ${ehAdmin() ? '' : '<p class="tela-intro"><i class="fas fa-lock" aria-hidden="true"></i> Logins da secretaria só podem ser criados pelo administrador.</p>'}
+                <p class="erro-texto" id="eqErro" role="alert"></p>
+                <div class="importar-botoes">
+                    <button type="button" class="btn-filtro secundario" data-fechar>Cancelar</button>
+                    <button type="submit" class="btn-importar"><i class="fas fa-paper-plane" aria-hidden="true"></i> Criar e enviar convite</button>
+                </div>
+            </form>`, 'eqTitulo');
+        const erro = fundo.querySelector('#eqErro');
+        fundo.querySelector('#eqForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const botao = e.target.querySelector('button[type=submit]');
+            const corpo = {
+                nome: fundo.querySelector('#eqNome').value.trim(),
+                email: fundo.querySelector('#eqEmail').value.trim(),
+                tipo_usuario: fundo.querySelector('#eqPerfil').value,
+                cpf: fundo.querySelector('#eqCpf').value.trim(),
+                telefone: fundo.querySelector('#eqTel').value.trim()
+            };
+            if (corpo.nome.length < 3) { erro.textContent = 'Informe o nome completo.'; fundo.querySelector('#eqNome').focus(); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(corpo.email)) { erro.textContent = 'Informe um e-mail válido.'; fundo.querySelector('#eqEmail').focus(); return; }
+            botao.disabled = true; erro.textContent = '';
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Criando...';
+            try {
+                const r = await api('/usuarios/equipe', { method: 'POST', body: JSON.stringify(corpo) });
+                fechar();
+                mostrarSenhaTemporaria(r, `Login de ${r.nome} criado`);
+                if (typeof window.carregarPerfis === 'function') window.carregarPerfis();
+            } catch (err) {
+                erro.textContent = err.message;
+                botao.disabled = false; botao.innerHTML = '<i class="fas fa-paper-plane" aria-hidden="true"></i> Criar e enviar convite';
+            }
+        });
+        fundo.querySelector('#eqNome').focus();
+    }
+
+    async function reenviarConvite(perfil) {
+        if (!perfil) return;
+        const ok = await PIDialogo.confirmar({
+            titulo: 'Reenviar convite?',
+            texto: `Uma nova senha temporária será criada para ${perfil.nome} e enviada para ${perfil.email}. A senha atual dessa pessoa deixa de funcionar e ela precisará criar uma nova no próximo login.`,
+            ok: 'Gerar e enviar', tipo: 'normal'
+        });
+        if (!ok) return;
+        try {
+            const r = await api(`/usuarios/${perfil.id_usuario}/convite`, { method: 'POST', body: '{}' });
+            mostrarSenhaTemporaria(r, `Nova senha para ${r.nome}`);
+            if (typeof window.carregarPerfis === 'function') window.carregarPerfis();
+        } catch (err) { PIDialogo.avisar(err.message, { tipo: 'erro' }); }
+    }
+
     // ================================================================
     function aoMudarTela(id) {
+        if (id === 'tela-turmas') { editandoTurma = null; avisoTurma(''); carregarTurmas(); }
         if (id === 'tela-auditoria') { aud.pagina = 1; carregarAuditoria(); }
         if (id === 'tela-saude') carregarSaude();
     }
     document.addEventListener('DOMContentLoaded', () => {
-        ligarAuditoria(); ligarSaude();
+        ligarAuditoria(); ligarSaude(); ligarTurmas();
         const b = $('btnImportarAlunos'); if (b) b.addEventListener('click', abrirImportar);
+        const nl = $('btnNovoLoginEquipe'); if (nl) nl.addEventListener('click', abrirNovoLogin);
     });
-    window.PIAdmin = { aoMudarTela, _campoDoCabecalho: campoDoCabecalho };
+    window.PIAdmin = { aoMudarTela, reenviarConvite, abrirNovoLogin, _campoDoCabecalho: campoDoCabecalho };
 })();

@@ -6,7 +6,7 @@ let pedidoSelecionado = null;
 // 1. GERENCIAMENTO DE TELAS E FORMULÁRIOS
 // ==========================================
 function mostrarTela(idTela) {
-    const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-perfis', 'tela-historico', 'tela-mensagens', 'tela-equipe', 'tela-auditoria', 'tela-saude'];
+    const telas = ['tela-inicio', 'tela-painel', 'tela-solicitacoes', 'tela-vincular', 'tela-alunos', 'tela-perfis', 'tela-historico', 'tela-mensagens', 'tela-equipe', 'tela-auditoria', 'tela-saude', 'tela-turmas'];
     telas.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -765,21 +765,25 @@ function renderizarPerfis(perfis) {
 
     tbody.innerHTML = perfis.map(p => `
         <tr class="${p.ativo ? '' : 'perfil-desativado'}">
-            <td>${esc(p.nome)}${p.eu ? ' <small>(você)</small>' : ''}</td>
+            <td>${esc(p.nome)}${p.eu ? ' <small>(você)</small>' : ''}${p.aguardando_primeiro_acesso && p.tipo_usuario !== 'PAI' ? ' <span class="perfil-aguardando" title="Ainda não entrou para criar a própria senha">Aguardando 1º acesso</span>' : ''}</td>
             <td>${esc(p.email)}</td>
             <td>${ROTULO_TIPO_PERFIL[p.tipo_usuario] || esc(p.tipo_usuario)}</td>
             <td>${esc(p.alunos || '-')}</td>
             <td><span class="status ${p.ativo ? 'status-ativo' : 'status-desativado'}">${p.ativo ? 'Ativo' : 'Desativado'}</span></td>
-            <td>
+            <td><div class="perfil-acoes">
                 <button type="button" class="btn-perfil ${p.ativo ? 'desativar' : 'reativar'}"
                         data-id="${p.id_usuario}" data-ativo="${p.ativo ? '0' : '1'}" ${p.eu ? 'disabled title="Você não pode desativar o próprio perfil"' : ''}>
                     ${p.ativo ? '<i class="fas fa-user-slash"></i> Desativar' : '<i class="fas fa-user-check"></i> Reativar'}
                 </button>
-            </td>
+                ${p.pode_reenviar && p.ativo ? `<button type="button" class="btn-perfil reativar btn-perfil-convite" data-convite="${p.id_usuario}" title="Gera uma nova senha temporária e manda por e-mail"><i class="fas fa-envelope"></i> Reenviar convite</button>` : ''}
+            </div></td>
         </tr>`).join('');
 
-    tbody.querySelectorAll('.btn-perfil').forEach(btn => {
+    tbody.querySelectorAll('.btn-perfil[data-id]').forEach(btn => {
         btn.addEventListener('click', () => alterarStatusPerfil(Number(btn.dataset.id), btn.dataset.ativo === '1'));
+    });
+    tbody.querySelectorAll('[data-convite]').forEach(btn => {
+        btn.addEventListener('click', () => window.PIAdmin && window.PIAdmin.reenviarConvite(perfisCache.find(p => p.id_usuario === Number(btn.dataset.convite))));
     });
 }
 

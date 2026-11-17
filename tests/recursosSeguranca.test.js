@@ -413,3 +413,108 @@ test('versão do Node fixada para o Render', () => {
     assert.equal(pkg.engines.node, '24.x');
     assert.equal(ler('.node-version').trim(), '24');
 });
+
+// ================================================================== SALAS E TURMAS
+test('turmas: nome e turno validados (turno aceita sem acento) e nada de HTML', () => {
+    const { _validar } = require(path.join(raiz, 'controller/turmasController.js'));
+    assert.deepEqual(_validar({ sala_turma: '  1º   Ano A ', turno: 'MANHA' }), { sala_turma: '1º Ano A', turno: 'Manhã' });
+    assert.ok(_validar({ sala_turma: '', turno: 'Tarde' }).erro);
+    assert.ok(_validar({ sala_turma: '1º A', turno: 'Madrugada' }).erro);
+    assert.ok(_validar({ sala_turma: '<b>x</b>', turno: 'Tarde' }).erro);
+});
+
+test('turmas: não duplica nome, e só remove turma sem alunos e sem professores', async () => {
+    const base = { 1: { id_turma: 1, sala_turma: '1º A', turno: 'Manhã' }, 2: { id_turma: 2, sala_turma: '2º B', turno: 'Tarde' } };
+    const vinculos = { 1: { alunos: 12, professores: 1 }, 2: { alunos: 0, professores: 0 } };
+    const apagadas = [];
+    mock('model/turmasModel.js', {
+        buscarPorId: async id => base[id] || null,
+        buscarMesmoNome: async (nome, ignorar = 0) => Object.values(base).find(t => t.sala_turma.toLowerCase() === nome.toLowerCase() && t.id_turma !== ignorar) || null,
+        cadastrar: async () => 3, atualizar: async () => true,
+        contarVinculos: async id => vinculos[id], apagar: async id => { apagadas.push(id); return true; }
+    });
+    delete require.cache[require.resolve(path.join(raiz, 'controller/turmasController.js'))];
+    const ctl = require(path.join(raiz, 'controller/turmasController.js'));
+    const chamarT = async (fn, body, params = {}) => { const r = novoRes(); await fn({ body, params, usuario: { id_usuario: 2, tipo_usuario: 'SECRETARIA' }, headers: {} }, r); return r; };
+    assert.equal((await chamarT(ctl.cadastrar, { sala_turma: '1º a', turno: 'Manhã' })).codigo, 409);
+    assert.equal((await chamarT(ctl.cadastrar, { sala_turma: '3º C', turno: 'Noite' })).codigo, 201);
+    assert.equal((await chamarT(ctl.atualizar, { sala_turma: '2º B', turno: 'Manhã' }, { id: '1' })).codigo, 409);
+    assert.equal((await chamarT(ctl.atualizar, { sala_turma: '1º A', turno: 'Integral' }, { id: '1' })).codigo, 200);
+    const emUso = await chamarT(ctl.apagar, {}, { id: '1' });
+    assert.equal(emUso.codigo, 409); assert.match(emUso.corpo.erro, /12 aluno/);
+    assert.equal((await chamarT(ctl.apagar, {}, { id: '2' })).codigo, 200);
+    assert.deepEqual(apagadas, [2]);
+    assert.equal((await chamarT(ctl.apagar, {}, { id: '99' })).codigo, 404);
+});
+
+test('turmas: tela "Salas e Turmas" na secretaria, rotas só para secretaria/admin', () => {
+    const html = ler('public/secretaria.html');
+    assert.match(html, /id="tela-turmas"/);
+    assert.match(html, /mostrarTela\('tela-turmas'\)/);
+    assert.match(ler('public/js/general/layout.js'), /tela-turmas/);
+    const rotas = ler('api/turmasRotas.js');
+    assert.match(rotas, /put\('\/:id', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
+    assert.match(rotas, /delete\('\/:id', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
+});
+
+// ================================================================== LOGINS DA EQUIPE
+test('equipe: admin cria secretaria/portaria/professor com senha temporária e convite por e-mail', async () => {
+    const criados = [];
+    usuarios.cadastrarEquipe = async (nome, cpf, email, tel, hash, tipo) => { criados.push({ nome, cpf, email, tel, hash, tipo }); return 40 + criados.length; };
+    const admin = { id_usuario: 1, nome: 'Admin', tipo_usuario: 'ADMIN' };
+    emails.length = 0;
+    const r = await chamar(ctlU.criarEquipe, { nome: 'Maria Souza', email: 'Maria@Escola.test', tipo_usuario: 'secretaria' }, admin);
+    assert.equal(r.codigo, 201);
+    assert.equal(r.corpo.email_enviado, true);
+    assert.match(r.corpo.senha_temporaria, /^[A-Za-z2-9]{10}$/);
+    assert.equal(criados[0].tipo, 'SECRETARIA');
+    assert.equal(criados[0].email, 'maria@escola.test');
+    assert.match(criados[0].cpf, /^PROV-[0-9a-f]{10}$/); // CPF opcional para a equipe
+    assert.equal(criados[0].hash, '$2b$h:' + r.corpo.senha_temporaria); // só o hash vai para o banco
+    assert.match(emails.at(-1).subject, /acesso ao Portaria Inteligente foi criado/);
+    assert.match(emails.at(-1).html, new RegExp(r.corpo.senha_temporaria));
+    for (const tipo of ['PORTARIA', 'PROFESSOR']) {
+        assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Pessoa ' + tipo, email: 'novo-' + tipo.toLowerCase() + '@escola.test', tipo_usuario: tipo }, admin)).codigo, 201);
+    }
+});
+
+test('equipe: secretaria não cria secretaria nem admin; dados inválidos são recusados', async () => {
+    const sec = { id_usuario: 2, nome: 'Ivone', tipo_usuario: 'SECRETARIA' };
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Outra Secretária', email: 'outra@escola.test', tipo_usuario: 'SECRETARIA' }, sec)).codigo, 403);
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Super', email: 'super@escola.test', tipo_usuario: 'ADMIN' }, { ...sec, tipo_usuario: 'ADMIN' })).codigo, 400);
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Porteiro Novo', email: 'porteiro@escola.test', tipo_usuario: 'PORTARIA' }, sec)).codigo, 201);
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Jo', email: 'jo@escola.test', tipo_usuario: 'PORTARIA' }, sec)).codigo, 400);
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Sem Email', email: 'nao-e-email', tipo_usuario: 'PORTARIA' }, sec)).codigo, 400);
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Fulano', email: 'f@escola.test', tipo_usuario: 'PORTARIA', cpf: '123' }, sec)).codigo, 400);
+    assert.equal((await chamar(ctlU.criarEquipe, { nome: 'Repetida', email: 'ivone@escola.test', tipo_usuario: 'PORTARIA' }, sec)).codigo, 409);
+});
+
+test('equipe: reenviar convite gera nova senha, exige troca e respeita quem pode gerir quem', async () => {
+    const pessoas = {
+        9: { id_usuario: 9, nome: 'Seu José', email: 'portaria@escola.test', tipo_usuario: 'PORTARIA', status: '1' },
+        2: { id_usuario: 2, nome: 'Ivone', email: 'ivone@escola.test', tipo_usuario: 'SECRETARIA', status: '1' },
+        7: { id_usuario: 7, nome: 'Desligado', email: 'x@escola.test', tipo_usuario: 'PORTARIA', status: '0' }
+    };
+    const definidas = [];
+    usuarios.buscarPorId = async id => pessoas[id] || null;
+    usuarios.definirSenhaTemporaria = async (id, hash) => { definidas.push([id, hash]); };
+    const sec = { id_usuario: 3, nome: 'Outra', tipo_usuario: 'SECRETARIA' };
+    const chamarId = async (id, quem) => { const r = novoRes(); await ctlU.reenviarConvite({ params: { id: String(id) }, body: {}, usuario: quem, headers: {} }, r); return r; };
+    const ok = await chamarId(9, sec);
+    assert.equal(ok.codigo, 200);
+    assert.equal(definidas[0][0], 9);
+    assert.equal(definidas[0][1], '$2b$h:' + ok.corpo.senha_temporaria);
+    assert.match(emails.at(-1).subject, /Nova senha temporária/);
+    assert.equal((await chamarId(2, sec)).codigo, 403);                         // secretaria não mexe em secretaria
+    assert.equal((await chamarId(2, { id_usuario: 1, tipo_usuario: 'ADMIN' })).codigo, 200); // admin pode
+    assert.equal((await chamarId(7, sec)).codigo, 409);                         // perfil desativado
+    assert.equal((await chamarId(3, sec)).codigo, 400);                         // a própria conta
+});
+
+test('equipe: tela tem o botão "Novo login da equipe" e as rotas exigem secretaria/admin', () => {
+    assert.match(ler('public/secretaria.html'), /id="btnNovoLoginEquipe"/);
+    assert.match(ler('public/js/general/admin-recursos.js'), /\/usuarios\/equipe/);
+    const rotas = ler('api/usuariosRotas.js');
+    assert.match(rotas, /post\('\/equipe', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
+    assert.match(rotas, /post\('\/:id\/convite', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
+});

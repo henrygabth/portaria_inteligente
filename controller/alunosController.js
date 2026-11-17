@@ -34,7 +34,7 @@ const alunosController = {
                 let turmaId = r.turma_id;
                 if (!turmaId) {
                     const chave = r.turma.toLowerCase();
-                    if (!criadas.has(chave)) criadas.set(chave, await turmasModel.cadastrar(r.turma, 'INTEGRAL'));
+                    if (!criadas.has(chave)) criadas.set(chave, await turmasModel.cadastrar(r.turma, 'Integral'));
                     turmaId = criadas.get(chave);
                 }
                 const matricula = r.matricula || `IMP-${Date.now().toString(36)}-${r.linha}`;
