@@ -381,3 +381,35 @@ test('tabelas novas são criadas sozinhas ao iniciar', () => {
     const sql = ler('database/migration_seguranca_lgpd_push_up.sql');
     TABELAS_NOVAS.forEach(([n]) => assert.match(sql, new RegExp(`CREATE TABLE IF NOT EXISTS ${n}`)));
 });
+
+// ================================================================== MANUTENÇÃO
+test('2 etapas: a portaria também recebe o código por e-mail', async () => {
+    contas['portaria@escola.test'] = { id_usuario: 9, nome: 'Seu José', email: 'portaria@escola.test', tipo_usuario: 'PORTARIA', senha: '$2b$h:Senha1234', status: '1', token_versao: 0, primeiro_acesso: 0, termos_versao: '2026-11' };
+    const r = await chamar(ctlU.login, { email: 'portaria@escola.test', senha: 'Senha1234' });
+    assert.equal(r.corpo.doisFatores, true);
+    assert.equal(r.corpo.token, undefined);
+});
+
+test('manter acordado: visita /api/saude no Render e pode ser desligado', async () => {
+    const { iniciarManterAcordado } = require(path.join(raiz, 'utils/manterAcordado.js'));
+    const antes = { ...process.env };
+    delete process.env.MANTER_ACORDADO; delete process.env.MANTER_ACORDADO_URL;
+    process.env.RENDER_EXTERNAL_URL = 'https://portaria-teste.onrender.com/';
+    let chamado = null, agendado = null;
+    const r = iniciarManterAcordado({ fetch: async u => { chamado = u; return { ok: true }; }, setInterval: (fn, ms) => { agendado = ms; return 1; } });
+    assert.equal(r.url, 'https://portaria-teste.onrender.com/api/saude');
+    assert.equal(agendado, 10 * 60 * 1000); // menos que os 15 min que o Render espera para "dormir"
+    await r.visitar();
+    assert.equal(chamado, 'https://portaria-teste.onrender.com/api/saude');
+    process.env.MANTER_ACORDADO = 'desligado';
+    assert.equal(iniciarManterAcordado({ fetch: async () => ({}), setInterval: () => 1 }), null);
+    delete process.env.MANTER_ACORDADO; delete process.env.RENDER_EXTERNAL_URL;
+    assert.equal(iniciarManterAcordado({ fetch: async () => ({}), setInterval: () => 1 }), null); // fora do Render: não faz nada
+    Object.assign(process.env, antes);
+});
+
+test('versão do Node fixada para o Render', () => {
+    const pkg = JSON.parse(ler('package.json'));
+    assert.equal(pkg.engines.node, '24.x');
+    assert.equal(ler('.node-version').trim(), '24');
+});

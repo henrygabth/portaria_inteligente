@@ -54,11 +54,11 @@ function enviarEmSegundoPlano(opcoes, contexto) {
 }
 
 // ------------------------------------------------------------------ login em duas etapas
-// Secretaria e administração mexem com dados de todos os alunos: além da senha, recebem um
+// Secretaria, administração e portaria mexem com dados de todos os alunos: além da senha, recebem um
 // código de 6 números por e-mail. DOIS_FATORES=desligado no .env desativa (ex.: em testes).
 const doisFatores = require('../model/doisFatoresModel');
 const { VERSAO_TERMOS, precisaAceitar } = require('../utils/lgpd');
-const PAPEIS_2FA = (process.env.DOIS_FATORES_PAPEIS || 'SECRETARIA,ADMIN').split(',').map(p => p.trim().toUpperCase()).filter(Boolean);
+const PAPEIS_2FA = (process.env.DOIS_FATORES_PAPEIS || 'SECRETARIA,ADMIN,PORTARIA,PORTEIRO').split(',').map(p => p.trim().toUpperCase()).filter(Boolean);
 const MINUTOS_CODIGO = 10;
 const DIAS_APARELHO = 30;
 const exige2fa = u => String(process.env.DOIS_FATORES || '').toLowerCase() !== 'desligado' && PAPEIS_2FA.includes(String(u.tipo_usuario || '').toUpperCase());

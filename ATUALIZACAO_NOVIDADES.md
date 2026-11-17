@@ -159,3 +159,15 @@ Criado automaticamente ao iniciar o servidor (utils/migrar.js) ou por `database/
   - **Cancelar saída aprovada:** o motivo é digitado na própria janela.
 - **Console limpo.** As mensagens `console.error` e `console.warn` saíram das telas. Os logs do servidor continuam, porque aparecem só no painel do Render e ajudam a achar erros.
 - **Instalação pelo navegador da Samsung.** O Google Play Protect mostra "App de risco bloqueado" quando o app é instalado pelo Samsung Internet. É um problema conhecido desse navegador com qualquer aplicativo web. Nele, o sistema agora mostra "Instale pelo Chrome", com um botão que abre o Chrome. Pelo Chrome a instalação acontece sem aviso.
+
+---
+
+## Manutenção: Node fixo, site sem "dormir", portaria com código e dependências
+
+- **Versão do Node fixada em 24 (LTS).** Os arquivos `package.json` (`"engines": { "node": "24.x" }`) e `.node-version` fazem o Render usar sempre a mesma versão, sem trocar sozinho. Também foi criado o comando `npm start`.
+- **O site não "dorme" mais.** No plano grátis, o Render desliga o serviço depois de cerca de 15 minutos sem visitas. Com isso, o primeiro acesso levava uns 40 segundos e as rotinas automáticas paravam (alerta de atraso, horários fixos, backup).
+  - Agora o próprio servidor visita o endereço `/api/saude` a cada 10 minutos (`utils/manterAcordado.js`).
+  - Liga sozinho no Render, porque usa o endereço `RENDER_EXTERNAL_URL` que ele informa. Para desligar, use `MANTER_ACORDADO=desligado`.
+  - Um serviço ligado 24 horas usa cerca de 744 horas por mês, dentro das 750 horas grátis do Render (um serviço por conta).
+- **A portaria também recebe o código por e-mail no login,** como a secretaria e a administração. Dá para mudar os perfis com `DOIS_FATORES_PAPEIS`.
+- **Dependências:** rode `npm audit fix` com internet. Isso atualiza o `package-lock.json` para versões sem as vulnerabilidades conhecidas. Depois rode `npm test` e suba o `package-lock.json` atualizado.

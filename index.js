@@ -41,7 +41,8 @@ app.use((req, res, next) => (req.path === '/api/alunos/importar' ? jsonGrande : 
 // Endereço leve para monitoramento (ex.: UptimeRobot/cron-job.org a cada 5-10 min).
 // No plano gratuito do Render o servidor "dorme" sem acesso, e dormindo as rotinas de
 // alerta de atraso e a fila de e-mails ficam paradas.
-app.get('/api/saude', (req, res) => res.json({ ok: true, hora: new Date().toISOString() }));
+// Verificação leve (sem banco): usada pelo "manter acordado" e por monitores como o UptimeRobot.
+app.get('/api/saude', (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ok: true, hora: new Date().toISOString() }); });
 
 // Teto geral da API por IP (protege contra robôs e loops no navegador).
 app.use('/api', limitar({ nome: 'api', max: 600, janelaMs: 60 * 1000, mensagem: 'Muitas requisições. Aguarde alguns segundos.' }));
@@ -97,7 +98,8 @@ app.use((err, req, res, next) => {
 
 process.on('unhandledRejection', (motivo) => console.error('[servidor] Promise rejeitada sem tratamento:', motivo));
 
-const PORT = process.env.PORTA || 3000;
+// O Render (e outras hospedagens) informam a porta em PORT; PORTA continua valendo para uso local.
+const PORT = process.env.PORT || process.env.PORTA || 3000;
 app.listen(PORT, async () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
 
@@ -110,4 +112,7 @@ app.listen(PORT, async () => {
     // atrasos no retorno periodicamente (ver utils/agendador.js).
     const { iniciarAgendador } = require('./utils/agendador');
     iniciarAgendador();
+
+    // Plano grátis do Render: não deixa o site "dormir" (ver utils/manterAcordado.js).
+    require('./utils/manterAcordado').iniciarManterAcordado();
 });
