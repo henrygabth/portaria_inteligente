@@ -215,8 +215,7 @@
         // As telas definem mostrarTela no próprio script, que roda depois deste: espera tudo carregar.
         window.addEventListener('load', prepararLeitorDeTela);
 
-        // Na tela de login, na primeira visita deste aparelho, pergunta como a pessoa quer ver.
-        if (document.body.dataset.a11yBoasVindas !== undefined && !jaEscolheu()) abrir(true);
+        // O menu não abre sozinho: fica só o botão de acessibilidade, para quem quiser ajustar.
     }
 
     // ------------------------------------------------------------ leitor de tela (NVDA, TalkBack, VoiceOver)

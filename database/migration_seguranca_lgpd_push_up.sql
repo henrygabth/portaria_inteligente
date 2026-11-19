@@ -73,6 +73,20 @@ CREATE TABLE IF NOT EXISTS dispositivos_confiaveis (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Pedidos de demonstração da página pública de apresentação (conheca.html)
+CREATE TABLE IF NOT EXISTS contatos_comerciais (
+    contato_id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(120) NOT NULL,
+    escola VARCHAR(150) NOT NULL,
+    cargo VARCHAR(40) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    telefone VARCHAR(13) NULL,
+    alunos VARCHAR(20) NOT NULL,
+    mensagem VARCHAR(1000) NULL,
+    criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_contato_data (criado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- LGPD (rode cada ALTER só se a coluna ainda não existir)
 ALTER TABLE usuarios ADD COLUMN termos_versao VARCHAR(20) NULL;
 ALTER TABLE usuarios ADD COLUMN termos_aceitos_em DATETIME NULL;

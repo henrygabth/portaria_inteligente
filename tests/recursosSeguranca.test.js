@@ -377,7 +377,7 @@ test('telas novas: auditoria, saúde, importar, privacidade e avisos no celular'
 
 test('tabelas novas são criadas sozinhas ao iniciar', () => {
     const { TABELAS_NOVAS } = require(path.join(raiz, 'utils/migrar.js'));
-    assert.deepEqual(TABELAS_NOVAS.map(t => t[0]), ['config_sistema', 'push_inscricoes', 'push_envios', 'auditoria', 'login_codigos', 'dispositivos_confiaveis']);
+    assert.deepEqual(TABELAS_NOVAS.map(t => t[0]), ['config_sistema', 'push_inscricoes', 'push_envios', 'auditoria', 'login_codigos', 'contatos_comerciais', 'dispositivos_confiaveis']);
     const sql = ler('database/migration_seguranca_lgpd_push_up.sql');
     TABELAS_NOVAS.forEach(([n]) => assert.match(sql, new RegExp(`CREATE TABLE IF NOT EXISTS ${n}`)));
 });
@@ -517,4 +517,38 @@ test('equipe: tela tem o botão "Novo login da equipe" e as rotas exigem secreta
     const rotas = ler('api/usuariosRotas.js');
     assert.match(rotas, /post\('\/equipe', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
     assert.match(rotas, /post\('\/:id\/convite', auth, exigirPapel\('SECRETARIA', 'ADMIN'\)/);
+});
+
+// ================================================================== PÁGINA DE APRESENTAÇÃO (link da bio)
+test('contato: valida, salva o pedido e avisa os administradores por e-mail', async () => {
+    const salvos = [];
+    mock('model/contatosModel.js', { cadastrar: async c => { salvos.push(c); return 7; }, emailsAdmins: async () => ['admin@escola.test'] });
+    delete require.cache[require.resolve(path.join(raiz, 'controller/contatoController.js'))];
+    const ctl = require(path.join(raiz, 'controller/contatoController.js'));
+    const ok = { nome: 'Ana Souza', escola: 'Colégio Exemplo', cargo: 'Direção', alunos: '201 a 500', email: 'Ana@Exemplo.test', telefone: '(19) 99999-0000', mensagem: 'Oi <b>', aceite: true };
+    emails.length = 0;
+    const r = await chamar(ctl.enviar, ok);
+    assert.equal(r.codigo, 201);
+    assert.equal(salvos[0].email, 'ana@exemplo.test');
+    assert.equal(salvos[0].telefone, '19999990000');
+    await new Promise(s => setImmediate(s));
+    assert.equal(emails.at(-1).to, 'admin@escola.test');
+    assert.match(emails.at(-1).subject, /Colégio Exemplo/);
+    assert.doesNotMatch(emails.at(-1).html, /<b>/);                          // mensagem escapada no e-mail
+    for (const [campo, valor] of [['nome', 'A'], ['escola', ''], ['cargo', 'Rei'], ['email', 'x'], ['alunos', '9'], ['aceite', false], ['telefone', '123']]) {
+        assert.equal((await chamar(ctl.enviar, { ...ok, [campo]: valor })).codigo, 400, campo);
+    }
+    const n = salvos.length;
+    assert.equal((await chamar(ctl.enviar, { ...ok, site: 'http://spam' })).codigo, 201);   // robô: finge sucesso
+    assert.equal(salvos.length, n);                                                          // ...mas não salva
+});
+
+test('contato: rota pública com limite, tabela criada sozinha e página com o formulário', () => {
+    assert.match(ler('index.js'), /app\.use\('\/api\/contato', contatoRotas\)/);
+    assert.match(ler('api/contatoRotas.js'), /limitar\(\{ nome: 'contato-comercial', max: 5/);
+    assert.match(ler('utils/migrar.js'), /'contatos_comerciais'/);
+    const pagina = ler('public/conheca.html');
+    assert.match(pagina, /id="formContato"/);
+    assert.match(pagina, /id="ctAceite"/);
+    assert.doesNotMatch(pagina, /senai|tcc/i);
 });

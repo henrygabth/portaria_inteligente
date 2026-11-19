@@ -541,6 +541,19 @@ const TABELAS_NOVAS = [
         KEY idx_login_usuario (usuario_id, criado_em),
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`, 'fk'],
+    // Pedidos de demonstração da página pública de apresentação (conheca.html).
+    ['contatos_comerciais', `CREATE TABLE contatos_comerciais (
+        contato_id INT AUTO_INCREMENT PRIMARY KEY,
+        nome VARCHAR(120) NOT NULL,
+        escola VARCHAR(150) NOT NULL,
+        cargo VARCHAR(40) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        telefone VARCHAR(13) NULL,
+        alunos VARCHAR(20) NOT NULL,
+        mensagem VARCHAR(1000) NULL,
+        criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_contato_data (criado_em)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`],
     // "Confiar neste aparelho por 30 dias" (não pede o código de novo nesse navegador).
     ['dispositivos_confiaveis', `CREATE TABLE dispositivos_confiaveis (
         dispositivo_id INT AUTO_INCREMENT PRIMARY KEY,

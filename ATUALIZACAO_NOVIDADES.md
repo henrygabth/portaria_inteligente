@@ -197,3 +197,17 @@ Criado automaticamente ao iniciar o servidor (utils/migrar.js) ou por `database/
 - Tudo fica na **auditoria** ("Usuário cadastrado" e "Nova senha temporária enviada").
 - **API:** `POST /api/usuarios/equipe` e `POST /api/usuarios/:id/convite`, somente para Secretaria e Admin.
 - Não precisa mudar nada no `.env`. O link do convite usa o `BASE_URL` que já está configurado no Render.
+
+## Página de apresentação (link da bio do Instagram)
+
+- Página pública nova: **/conheca.html**. Explica como o sistema funciona, mostra os diferenciais, responde às perguntas frequentes e tem o formulário **Peça uma demonstração**.
+- O pedido fica salvo na tabela nova `contatos_comerciais` (criada sozinha ao iniciar) e os administradores recebem um e-mail com os dados, para responder direto.
+- Proteções: no máximo 5 pedidos por hora por aparelho, campo invisível contra robôs, aceite de uso dos dados (LGPD) e texto escapado no e-mail.
+- **API:** `POST /api/contato` (pública).
+- Link para colocar na bio: `https://SEU-SITE.onrender.com/conheca.html`.
+
+## Acessibilidade sem janela automática
+
+- O menu de acessibilidade não abre mais sozinho na primeira visita ao login.
+- O botão de acessibilidade continua no canto da tela (ou o atalho Alt+A) para quem quiser ajustar cores, tamanho do texto ou Libras.
+- O aplicativo instalado (service worker) passou para a versão `pi-v4`, para os aparelhos pegarem a mudança logo.

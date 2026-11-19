@@ -26,8 +26,9 @@ test('toda tela (menos a offline) é instalável: manifest, ícone e pwa.js', ()
     }
 });
 
-test('login pergunta na primeira visita como a pessoa quer ver o sistema', () => {
-    for (const p of ['login.html', 'index.html']) assert.match(ler(p), /<body[^>]*data-a11y-boas-vindas/, p);
+test('menu de acessibilidade não abre sozinho: só pelo botão (ou Alt+A)', () => {
+    for (const p of ['login.html', 'index.html']) assert.doesNotMatch(ler(p), /data-a11y-boas-vindas/, p);
+    assert.doesNotMatch(ler('js/general/acessibilidade.js'), /abrir\(true\)/);
 });
 
 test('menu tem as opções de cor, tamanho de texto e Libras', () => {

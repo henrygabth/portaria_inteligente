@@ -1,5 +1,6 @@
 -- Desfaz migration_seguranca_lgpd_push_up.sql. ATENÇÃO: apaga a auditoria e as inscrições de notificação.
 -- Faça BACKUP antes.
+DROP TABLE IF EXISTS contatos_comerciais;
 DROP TABLE IF EXISTS dispositivos_confiaveis;
 DROP TABLE IF EXISTS login_codigos;
 DROP TABLE IF EXISTS push_envios;

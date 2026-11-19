@@ -64,6 +64,7 @@ const relatoriosRotas = require('./api/relatoriosRotas');
 const pushRotas = require('./api/pushRotas');
 const auditoriaRotas = require('./api/auditoriaRotas');
 const sistemaRotas = require('./api/sistemaRotas');
+const contatoRotas = require('./api/contatoRotas');
 
 app.use('/api/usuarios', usuariosRotas);
 app.use('/api/alunos', alunosRotas);
@@ -78,6 +79,7 @@ app.use('/api/relatorios', relatoriosRotas);
 app.use('/api/push', pushRotas);
 app.use('/api/auditoria', auditoriaRotas);
 app.use('/api/sistema', sistemaRotas);
+app.use('/api/contato', contatoRotas);
 
 // Rota da API que não existe: responde JSON (e não a página HTML de erro do Express).
 app.use('/api', (req, res) => res.status(404).json({ erro: 'Rota não encontrada.' }));
